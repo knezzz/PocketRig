@@ -1,0 +1,80 @@
+name: pocket_rig
+description: Minimal phone client for OpenRig rigs over Tailscale, with SSH fallback.
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.5.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  http: ^1.2.2
+  dartssh2: ^4.1.0
+  xterm: ^4.0.0
+  flutter_secure_storage: ^9.2.2
+  yaml: ^3.1.2
+  flutter_markdown_plus: ^1.0.12
+  webview_flutter: ^4.14.1
+  url_launcher: ^6.3.3
+  re_highlight: ^0.0.3
+  app_links: ^7.2.2
+  pinenacl: ^0.6.0
+  crypto: ^3.0.8
+  drift: ^2.35.3
+  drift_flutter: ^0.3.1
+  path_provider: ^2.1.6
+  borealis: ^2.0.0
+  loggy: ^2.0.3
+  yaml_edit: ^2.2.4
+  home_widget: ^0.10.0
+  file_picker: ^11.0.3
+  video_player: ^2.14.1
+  flutter_pty: ^0.4.2
+  share_plus: ^12.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  alchemist: ^0.14.1
+  drift_dev: ^2.35.2
+  build_runner: ^2.17.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    # Uploaded to the host by Hosts → Notifications → Set up on this host.
+    - host/watcher/pocketrig-watcher.mjs
+    - host/watcher/push.mjs
+    - host/watcher/claude-hook.sh
+    - host/watcher/install.sh
+    # Simple Icons (CC0), rasterised; see assets/icons/README.md.
+    - assets/icons/
+  # Inter and JetBrains Mono, as on the "RigPocket wireframes" boards (OFL,
+  # licenses next to the files).
+  fonts:
+    - family: Inter
+      fonts:
+        - asset: assets/fonts/Inter-400.ttf
+        - asset: assets/fonts/Inter-500.ttf
+          weight: 500
+        - asset: assets/fonts/Inter-600.ttf
+          weight: 600
+        - asset: assets/fonts/Inter-700.ttf
+          weight: 700
+    # Glyphs JetBrains Mono lacks, drawn the same on every platform (no tofu, no colour emoji wider than a cell, braille that
+    # shows only its lit dots): the terminal's fallbacks, built by tool/glyph_fonts/build_glyph_fonts.py.
+    - family: PocketRig Glyphs
+      fonts:
+        - asset: assets/fonts/PocketRigGlyphs.ttf
+    - family: PocketRig Emoji
+      fonts:
+        - asset: assets/fonts/PocketRigEmoji.ttf
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-400.ttf
+        - asset: assets/fonts/JetBrainsMono-500.ttf
+          weight: 500
+        - asset: assets/fonts/JetBrainsMono-600.ttf
+          weight: 600

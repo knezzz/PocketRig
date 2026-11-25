@@ -1,0 +1,36 @@
+  ⎿  · Which colour do you prefer? (Red / Green / Blue)
+
+❯ Run the shell command: echo hello   (use the Bash
+  tool). Nothing else.
+
+⏺ Bash(echo hello)
+  ⎿  hello
+
+⏺ The command ran and printed hello.
+
+✻ Churned for 8s · done 3:43 PM
+
+❯ Run this exact shell command with the Bash tool: touch
+  dialog-test.txt   Nothing else.
+
+⏺ Bash(touch dialog-test.txt)
+  ⎿  Waiting…
+
+──────────────────────────────────────────────────────────
+ Bash command
+ Tip: auto mode handles these prompts for you — choose
+ "switch to auto mode" below
+ Create empty test file
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ touch dialog-test.txt
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ Do you want to proceed?
+ ❯ 1. Yes
+   2. Yes, and always allow access to /Users/me/app
+      from this project
+   3. Yes, and switch to auto mode · auto mode handles
+      these prompts for you
+   4. No
+
+ Esc to cancel · Tab to amend
+

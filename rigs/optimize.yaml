@@ -1,0 +1,201 @@
+version: "0.2"
+name: pocketrig-optimize
+culture_file: STARTUP-CULTURE.md
+summary: >
+  PocketRig speed team. An Opus lead runs the optimize mission, a Sonnet perf engineer measures and fixes caching and
+  background message prefetch, a Sonnet app engineer builds the rig-details media section, an Opus cache architect
+  and an Opus sync engineer design caching and background polling up front and check the builds against it, Sonnet
+  QA checks each item on a simulator and the Opus reviewer reads cache, background and SSH diffs.
+
+pods:
+  - id: core
+    label: Core
+    members:
+      - id: lead
+        role: founding-lead
+        model: claude-opus-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: lead
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/founding-lead.md
+              delivery_hint: send_text
+              required: true
+            - path: guidance/optimize-mission.md
+              delivery_hint: send_text
+              required: true
+      - id: perf
+        role: perf-engineer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/perf-engineer.md
+              delivery_hint: send_text
+              required: true
+      - id: app
+        role: app-engineer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/app-engineer.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - { kind: delegates_to, from: lead, to: perf }
+      - { kind: delegates_to, from: lead, to: app }
+      - { kind: collaborates_with, from: perf, to: app }
+
+  - id: experts
+    label: Experts
+    members:
+      - id: cache
+        role: cache-architect
+        model: claude-opus-5-5
+        effort: high
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/cache-architect.md
+              delivery_hint: send_text
+              required: true
+      - id: sync
+        role: sync-engineer
+        model: claude-opus-5-5
+        effort: high
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/sync-engineer.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - { kind: collaborates_with, from: cache, to: sync }
+
+  - id: check
+    label: Checks
+    members:
+      - id: qa
+        role: qa-engineer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/qa-engineer.md
+              delivery_hint: send_text
+              required: true
+      - id: review
+        role: code-reviewer
+        model: claude-opus-5-5
+        effort: high
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/code-reviewer.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+edges:
+  - { kind: delegates_to, from: core.lead, to: experts.cache }
+  - { kind: delegates_to, from: core.lead, to: experts.sync }
+  - { kind: collaborates_with, from: experts.cache, to: core.perf }
+  - { kind: collaborates_with, from: experts.cache, to: core.app }
+  - { kind: collaborates_with, from: experts.sync, to: core.perf }
+  - { kind: can_observe, from: experts.cache, to: core.perf }
+  - { kind: can_observe, from: experts.cache, to: core.app }
+  - { kind: can_observe, from: experts.sync, to: core.perf }
+  - { kind: delegates_to, from: core.lead, to: check.qa }
+  - { kind: delegates_to, from: core.lead, to: check.review }
+  - { kind: can_observe, from: check.qa, to: core.perf }
+  - { kind: can_observe, from: check.qa, to: core.app }
+  - { kind: can_observe, from: check.review, to: core.perf }
+  - { kind: can_observe, from: check.review, to: core.app }

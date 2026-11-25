@@ -1,0 +1,10 @@
+⏺ Bash(ls /tmp)
+  ⎿  Running…
+
+✽ Whatchamacalliting… (1h 8m 42s · ↓ 52.9k tokens)
+  ⎿  Tip: Use /clear to start fresh when switching topics and free up context
+
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle)

@@ -1,0 +1,195 @@
+version: "0.2"
+name: pocketrig-design-fix
+culture_file: STARTUP-CULTURE.md
+summary: >
+  PocketRig design review and fix team. An Opus product owner ranks what to fix and accepts it, an Opus lead routes,
+  a Sonnet design reviewer finds user-visible UI issues, Sonnet QA confirms each finding and re-checks each fix on a
+  simulator, two Sonnet devs fix them, and the Opus reviewer reads risky diffs.
+
+pods:
+  - id: product
+    label: Product
+    members:
+      - id: pm
+        role: product-owner
+        model: claude-opus-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: lead
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/product-owner.md
+              delivery_hint: send_text
+              required: true
+      - id: lead
+        role: founding-lead
+        model: claude-opus-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: lead
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/founding-lead.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - { kind: delegates_to, from: pm, to: lead }
+
+  - id: design
+    label: Design
+    members:
+      - id: designer
+        role: design-reviewer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/design-reviewer.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+  - id: dev
+    label: Dev
+    members:
+      - id: dev1
+        role: dev
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/app-engineer.md
+              delivery_hint: send_text
+              required: true
+      - id: dev2
+        role: dev
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/app-engineer.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - { kind: collaborates_with, from: dev1, to: dev2 }
+
+  - id: quality
+    label: Quality
+    members:
+      - id: qa
+        role: qa-engineer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/qa-engineer.md
+              delivery_hint: send_text
+              required: true
+      - id: review
+        role: code-reviewer
+        model: claude-opus-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/code-reviewer.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+edges:
+  - { kind: delegates_to, from: product.lead, to: design.designer }
+  - { kind: delegates_to, from: product.lead, to: dev.dev1 }
+  - { kind: delegates_to, from: product.lead, to: dev.dev2 }
+  - { kind: delegates_to, from: product.lead, to: quality.qa }
+  - { kind: delegates_to, from: product.lead, to: quality.review }
+  - { kind: can_observe, from: quality.qa, to: dev.dev1 }
+  - { kind: can_observe, from: quality.qa, to: dev.dev2 }
+  - { kind: can_observe, from: quality.review, to: dev.dev1 }
+  - { kind: can_observe, from: quality.review, to: dev.dev2 }

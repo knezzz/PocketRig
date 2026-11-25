@@ -1,0 +1,40 @@
+{
+  "_comment": "Equivalence fixture for the three reducers. 'hosts' is exactly the usage_hosts_v1 blob the native fetchers read; 'responses' maps each host id to the raw GET <daemonBase>/api/provider/status body (trimmed from a live daemon on 2026-11-02): duplicate seat rows per window, an unknown-window-only row (gemini), a fractional usedPercent (codex). Reducing this must give usage_rings_expected.json with writtenAt 2026-11-02T00:30:00.000Z.",
+  "hosts": [
+    {"id": "h1", "label": "Macmini", "daemonBase": "http://mini.tail1.ts.net:7433"}
+  ],
+  "responses": {
+    "h1": {
+      "asOf": "2026-11-02T00:25:10.000Z",
+      "hostUsage": [
+        {
+          "host": "local",
+          "provider": "claude",
+          "windows": [
+            {"window": "weekly", "usedPercent": 37, "resetsAt": "2026-11-04T00:00:00.000Z", "asOf": "2026-11-01T14:10:01.537Z", "seatSession": "design-ux@app-build"},
+            {"window": "five_hour", "usedPercent": 11, "resetsAt": "2026-11-02T05:10:00.000Z", "asOf": "2026-11-02T00:25:04.160Z", "seatSession": "dev-android@pocketrig-factory"},
+            {"window": "weekly", "usedPercent": 58, "resetsAt": "2026-11-04T00:00:00.000Z", "asOf": "2026-11-02T00:25:04.160Z", "seatSession": "dev-android@pocketrig-factory"},
+            {"window": "five_hour", "usedPercent": 9, "resetsAt": "2026-11-02T05:10:00.000Z", "asOf": "2026-11-02T00:25:07.668Z", "seatSession": "dev-ios@pocketrig-factory"},
+            {"window": "weekly", "usedPercent": 57, "resetsAt": "2026-11-04T00:00:00.000Z", "asOf": "2026-11-02T00:25:07.668Z", "seatSession": "dev-ios@pocketrig-factory"},
+            {"window": "weekly", "usedPercent": 56, "resetsAt": "2026-11-04T00:00:00.000Z", "asOf": "2026-11-02T00:10:01.674Z", "seatSession": "review-r1@pocketrig-factory"},
+            {"window": "monthly", "usedPercent": 1, "resetsAt": "2026-12-01T00:00:00.000Z", "asOf": "2026-11-02T00:25:07.668Z"}
+          ]
+        },
+        {
+          "host": "build-box",
+          "provider": "codex",
+          "windows": [
+            {"window": "five_hour", "usedPercent": 40.6, "resetsAt": "2026-11-02T03:00:00.000Z", "asOf": "2026-11-02T00:20:00.000Z", "seatSession": "impl@other"}
+          ]
+        },
+        {
+          "host": "local",
+          "provider": "gemini",
+          "windows": [
+            {"window": "monthly", "usedPercent": 3, "resetsAt": "2026-12-01T00:00:00.000Z", "asOf": "2026-11-02T00:25:07.668Z"}
+          ]
+        }
+      ]
+    }
+  }
+}

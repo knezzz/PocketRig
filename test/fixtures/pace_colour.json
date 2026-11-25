@@ -1,0 +1,12 @@
+{
+  "about": "Usage percent colour by pace: ahead = used% minus pace% in points. Stops: 0 green, 1 gray, 2 red. Dart, Swift and Kotlin all check these cases.",
+  "cases": [
+    {"ahead": -20, "from": 0, "to": 0, "t": 0},
+    {"ahead": -5, "from": 0, "to": 0, "t": 0},
+    {"ahead": -3, "from": 0, "to": 1, "t": 0.4},
+    {"ahead": 0, "from": 1, "to": 2, "t": 0},
+    {"ahead": 3, "from": 1, "to": 2, "t": 0.6},
+    {"ahead": 5, "from": 2, "to": 2, "t": 0},
+    {"ahead": 20, "from": 2, "to": 2, "t": 0}
+  ]
+}

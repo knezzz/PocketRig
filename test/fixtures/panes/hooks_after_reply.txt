@@ -1,0 +1,16 @@
+❯ Summarise what you changed
+
+⏺ Done. Two changes:
+
+  - Retry: upload.dart retries a failed send three times, 200 ms apart,
+    then rethrows the last error.
+  - Test: upload_test.dart covers success on the second try and giving up
+    after the third, with a fake clock.
+  - Not run: the whole suite; only upload_test.dart.
+
+✽ Elucidating… (running Stop hooks… 1/5 · 5m 21s · ↓ 2.7k tokens)
+
+────────────────────────────────────────────────────────────────────────────────
+❯
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ auto mode on (shift+tab to cycle)  ✔ Update installed · /restart to apply

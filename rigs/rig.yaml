@@ -1,0 +1,134 @@
+version: "0.2"
+name: pocketrig-factory
+culture_file: CULTURE.md
+summary: >
+  PocketRig feature factory: lead, PM advisor, Flutter build, native iOS,
+  native Android, QA, design, and two independent reviewers.
+
+pods:
+  - id: orch
+    label: Orchestration
+    members:
+      - id: lead
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/orchestration/orchestrator"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+        startup:
+          files:
+            - path: guidance/lead-first-move.md
+              delivery_hint: send_text
+              required: true
+      - id: advisor
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/product-management/pm"
+        runtime: claude-code
+        profile: advisor
+        cwd: ..
+        startup:
+          files:
+            - path: guidance/advisor-role.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - kind: collaborates_with
+        from: advisor
+        to: lead
+
+  - id: dev
+    label: Development
+    members:
+      - id: build
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/development/implementer"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+      - id: qa
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/development/qa"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+      - id: ios
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/development/implementer"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+        startup:
+          files:
+            - path: guidance/ios-role.md
+              delivery_hint: send_text
+              required: true
+      - id: android
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/development/implementer"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+        startup:
+          files:
+            - path: guidance/android-role.md
+              delivery_hint: send_text
+              required: true
+      - id: design
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/design/product-designer"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+    edges:
+      - kind: delegates_to
+        from: build
+        to: qa
+
+  - id: review
+    label: Review
+    members:
+      - id: r1
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/review/independent-reviewer"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+      - id: r2
+        agent_ref: "path:/usr/local/lib/node_modules/@openrig/cli/daemon/specs/agents/review/independent-reviewer"
+        runtime: claude-code
+        profile: default
+        cwd: ..
+    edges: []
+
+edges:
+  - kind: delegates_to
+    from: orch.lead
+    to: dev.build
+  - kind: delegates_to
+    from: orch.lead
+    to: dev.design
+  - kind: delegates_to
+    from: orch.lead
+    to: dev.ios
+  - kind: delegates_to
+    from: orch.lead
+    to: dev.android
+  - kind: can_observe
+    from: review.r1
+    to: dev.ios
+  - kind: can_observe
+    from: review.r2
+    to: dev.android
+  - kind: delegates_to
+    from: orch.lead
+    to: review.r1
+  - kind: delegates_to
+    from: orch.lead
+    to: dev.qa
+  - kind: delegates_to
+    from: orch.lead
+    to: review.r2
+  - kind: can_observe
+    from: review.r1
+    to: dev.build
+  - kind: can_observe
+    from: review.r1
+    to: dev.design
+  - kind: can_observe
+    from: review.r2
+    to: dev.build
+  - kind: can_observe
+    from: review.r2
+    to: dev.qa

@@ -1,0 +1,22 @@
+{
+  "writtenAt": "2026-11-02T00:30:00.000Z",
+  "rings": [
+    {
+      "id": "h1/local/claude",
+      "hostLabel": "Macmini",
+      "provider": "claude",
+      "windows": [
+        {"window": "weekly", "windowSeconds": 604800, "usedPercent": 57, "resetsAt": "2026-11-04T00:00:00.000Z", "asOf": "2026-11-02T00:25:07.668Z"},
+        {"window": "five_hour", "windowSeconds": 18000, "usedPercent": 9, "resetsAt": "2026-11-02T05:10:00.000Z", "asOf": "2026-11-02T00:25:07.668Z"}
+      ]
+    },
+    {
+      "id": "h1/build-box/codex",
+      "hostLabel": "Macmini · build-box",
+      "provider": "codex",
+      "windows": [
+        {"window": "five_hour", "windowSeconds": 18000, "usedPercent": 41, "resetsAt": "2026-11-02T03:00:00.000Z", "asOf": "2026-11-02T00:20:00.000Z"}
+      ]
+    }
+  ]
+}

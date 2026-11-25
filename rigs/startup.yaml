@@ -1,0 +1,166 @@
+version: "0.2"
+name: pocketrig-startup
+culture_file: STARTUP-CULTURE.md
+summary: >
+  Small PocketRig startup team: a founding lead, an app engineer, a native and release engineer, QA, a design reviewer
+  and one code reviewer. Sonnet everywhere except the lead and the code reviewer. Bring it requests; it ships them to
+  the person's Mac and iPhone.
+
+pods:
+  - id: core
+    label: Core
+    members:
+      - id: lead
+        role: founding-lead
+        model: claude-opus-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: lead
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/founding-lead.md
+              delivery_hint: send_text
+              required: true
+      - id: app
+        role: app-engineer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/app-engineer.md
+              delivery_hint: send_text
+              required: true
+      - id: native
+        role: native-release-engineer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/native-engineer.md
+              delivery_hint: send_text
+              required: true
+    edges:
+      - kind: delegates_to
+        from: lead
+        to: app
+      - kind: delegates_to
+        from: lead
+        to: native
+      - kind: collaborates_with
+        from: app
+        to: native
+  - id: check
+    label: Checks
+    members:
+      - id: qa
+        role: qa-engineer
+        model: claude-sonnet-5-5
+        effort: low
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/qa-engineer.md
+              delivery_hint: send_text
+              required: true
+      - id: review
+        role: code-reviewer
+        model: claude-opus-5-5
+        effort: high
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/code-reviewer.md
+              delivery_hint: send_text
+              required: true
+      - id: design
+        role: design-reviewer
+        model: claude-sonnet-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: reviewer
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/design-reviewer.md
+              delivery_hint: send_text
+              required: true
+    edges: []
+
+edges:
+  - { kind: delegates_to, from: core.lead, to: check.qa }
+  - { kind: delegates_to, from: core.lead, to: check.review }
+  - { kind: delegates_to, from: core.lead, to: check.design }
+  - { kind: can_observe, from: check.design, to: core.app }
+  - { kind: can_observe, from: check.review, to: core.app }
+  - { kind: can_observe, from: check.review, to: core.native }

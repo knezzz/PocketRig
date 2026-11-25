@@ -16,6 +16,16 @@ void main() {
     expect(find.byIcon(Icons.north_east), findsNothing);
   });
 
+  testWidgets('the content sits at the vertical centre of the row, 40 and 48 alike', (tester) async {
+    for (final onTap in <VoidCallback?>[null, () {}]) {
+      await tester.pumpWidget(_in(DetailRow('Status', const Text('idle'), onTap: onTap)));
+      final row = tester.getRect(find.byType(DetailRow));
+      for (final t in ['Status', 'idle']) {
+        expect(tester.getCenter(find.text(t)).dy, closeTo(row.center.dy, 0.6), reason: '$t in a ${row.height} row');
+      }
+    }
+  });
+
   testWidgets('a tappable row is 48 tall, taps once and shows › ; external shows ↗', (tester) async {
     var taps = 0;
     await tester.pumpWidget(_in(DetailRow('Task', const Text('ship it'), onTap: () => taps++)));

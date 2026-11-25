@@ -25,9 +25,14 @@ class DetailRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
+    // Centred in its height: a ConstrainedBox alone would leave the content at the top of a 40 or 48 dp row. The Align takes
+    // its content's height (heightFactor 1), so the minimum is what grows it, and never more.
     final row = ConstrainedBox(
       constraints: BoxConstraints(minHeight: onTap == null ? 40 : 48),
-      child: Padding(
+      child: Align(
+        alignment: Alignment.centerLeft,
+        heightFactor: 1,
+        child: Padding(
         padding: padding,
         child: Row(crossAxisAlignment: value == null ? CrossAxisAlignment.center : CrossAxisAlignment.start, children: [
           if (icon != null) ...[Icon(icon, size: 20, color: k.muted), const SizedBox(width: 12)],
@@ -46,6 +51,7 @@ class DetailRow extends StatelessWidget {
                     : const Chevron(),
           ),
         ]),
+        ),
       ),
     );
     return onTap == null ? row : InkWell(onTap: onTap, child: row);

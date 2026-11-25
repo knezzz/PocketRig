@@ -17,6 +17,7 @@ import 'common.dart';
 import 'project_tally.dart' show looseState;
 import 'status_shape.dart';
 import 'desktop_shell.dart';
+import 'detail_row.dart';
 import 'kit.dart';
 import 'rig_screen.dart';
 import 'terminal_screen.dart';
@@ -266,15 +267,9 @@ class _LooseAgentScreenState extends State<LooseAgentScreen> {
     final status = looseStatus(a, null, jobs, subs);
     final what = a.tool != null ? '${a.tool} · ${a.detail ?? ''}' : (a.message ?? 'Waiting for your approval');
 
-    Widget detail(String label, String value, {bool isMono = false}) => Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            SizedBox(width: 96, child: Text(label, style: TextStyle(fontSize: 13, color: k.muted))),
-            Expanded(
-                child:
-                    Text(value, style: isMono ? mono(context, size: 12, color: k.ink) : const TextStyle(fontSize: 13))),
-          ]),
-        );
+    Widget detail(String label, String value, {bool isMono = false}) => DetailRow(label,
+        Text(value, style: isMono ? mono(context, size: 12, color: k.ink) : const TextStyle(fontSize: 13)),
+        padding: const EdgeInsets.symmetric(vertical: 4));
 
     final targets = _targets;
     return Scaffold(

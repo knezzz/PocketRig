@@ -13,6 +13,7 @@ import '../main.dart';
 import '../models.dart';
 import '../ssh/ssh_exec.dart';
 import 'common.dart';
+import 'detail_row.dart';
 import 'kit.dart';
 import 'progress_bar.dart' show ContextBar;
 import 'rig/seat_sheet.dart';
@@ -96,22 +97,10 @@ class _AgentDetailsSectionsState extends State<AgentDetailsSections> {
     final (add, del) = d.files.values.fold((0, 0), (a, e) => e == null ? a : (a.$1 + e.$1, a.$2 + e.$2));
     final last = s.lastActivityAt ?? d.lastActivityAt;
     // Waiting, not idle: on its shells, or on subagents it left running while at its prompt.
-    final idleSubs = s.activity == 'working' ? 0 : d.subagents.length;
-    final waiting = !s.needsInput && s.state != SeatState.stopped && s.activity != 'working' && (d.jobs.isNotEmpty || idleSubs > 0);
+    final (:waiting, :idleSubs) = AgentJob.seatWaiting(s, jobs: d.jobs.length, subagents: d.subagents.length);
 
-    // A tappable row is one InkWell across the card's full width, padded inside, so its ripple fills the card.
-    Widget row(String label, Widget value, {VoidCallback? onTap}) {
-      final content = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: 104, child: Text(label, style: TextStyle(fontSize: 13, color: k.muted))),
-          Expanded(child: value),
-        ]),
-      );
-      return onTap == null
-          ? content
-          : InkWell(onTap: onTap, child: ConstrainedBox(constraints: const BoxConstraints(minHeight: 48), child: content));
-    }
+    Widget row(String label, Widget value, {VoidCallback? onTap}) =>
+        DetailRow(label, value, onTap: onTap, padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6));
 
     Widget text(String v, {bool isMono = false, Color? color}) =>
         Text(v, style: isMono ? mono(context, size: 12, color: color ?? k.ink) : TextStyle(fontSize: 13, color: color));

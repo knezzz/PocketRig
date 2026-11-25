@@ -1,3 +1,4 @@
+import '../models.dart' show Seat, SeatState;
 import 'projects.dart' show shQuote;
 
 /// A process an agent started: a shell from its Bash tool (foreground or in
@@ -55,6 +56,17 @@ class AgentJob {
       if (shells > 0) '$shells ${shells == 1 ? 'shell' : 'shells'}',
       if (monitors > 0) '$monitors ${monitors == 1 ? 'monitor' : 'monitors'}',
     ];
+  }
+
+  /// Whether [s] is waiting rather than idle: on its shells ([jobs]) or on subagents it left running while at its prompt, and how
+  /// many of those ([idleSubs]; none when it works, since a working agent is working whatever it left running: Seat.state's rule).
+  /// One rule for the seat sheet's and the details card's Status line.
+  static ({bool waiting, int idleSubs}) seatWaiting(Seat s, {required int jobs, required int subagents}) {
+    final idleSubs = s.activity == 'working' ? 0 : subagents;
+    return (
+      waiting: !s.needsInput && s.state != SeatState.stopped && s.activity != 'working' && (jobs > 0 || idleSubs > 0),
+      idleSubs: idleSubs,
+    );
   }
 
   /// What an agent idle at its prompt is waiting on: its shells and

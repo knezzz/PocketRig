@@ -18,6 +18,7 @@ import '../answer_bar.dart';
 import '../chat/jobs_view.dart' show showJobsSheet;
 import '../chat_screen.dart' show ChatScreen, showGitSheet;
 import '../common.dart';
+import '../detail_row.dart';
 import '../kit.dart';
 import '../needs_you_banner.dart' show needsYouAlerts;
 import '../permission_card.dart';
@@ -393,9 +394,9 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
         ..._code(k, s, d),
         if (canQueue(s) || (s.nodeId != null && s.rigId.isNotEmpty) || widget.extraActions.isNotEmpty) ...[
           BorderedList(children: [
-            for (final (icon, label, run) in widget.extraActions) _Row(label, null, icon: icon, onTap: () => _leave(run)),
-            if (canQueue(s)) _Row('Add to queue…', null, icon: Icons.playlist_add, onTap: _addToQueue),
-            if (s.nodeId != null && s.rigId.isNotEmpty) _Row('Edit this seat in the spec', null, icon: Icons.edit_outlined, onTap: _editSpec),
+            for (final (icon, label, run) in widget.extraActions) DetailRow(label, null, icon: icon, onTap: () => _leave(run)),
+            if (canQueue(s)) DetailRow('Add to queue…', null, icon: Icons.playlist_add, onTap: _addToQueue),
+            if (s.nodeId != null && s.rigId.isNotEmpty) DetailRow('Edit this seat in the spec', null, icon: Icons.edit_outlined, onTap: _editSpec),
           ]),
         ],
         if (s.nodeId != null) ...[
@@ -426,9 +427,7 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
     final jobs = _jobsList;
     final subs = _subagents;
     // Waiting, not idle: on its shells, or on subagents it left running at its prompt.
-    final idleSubs = s.activity == 'working' ? 0 : subs.length;
-    // A working agent is working, whatever it left running (Seat.state's rule): the line is its icon's state.
-    final waiting = !s.needsInput && s.state != SeatState.stopped && s.activity != 'working' && (jobs.isNotEmpty || idleSubs > 0);
+    final (:waiting, :idleSubs) = AgentJob.seatWaiting(s, jobs: jobs.length, subagents: subs.length);
     final task = currentTaskFor(s, widget.queue);
     final last = s.lastActivityAt ?? d?.lastActivityAt;
     // Asking: the card above says what for; this says only the state.
@@ -440,10 +439,10 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
     final running = subs.where((a) => a.lastWrite == null || DateTime.now().difference(a.lastWrite!).inMinutes < 2);
     return [
       Section('Now', children: [
-        _Row('Status', Text(status, style: TextStyle(fontSize: 13, color: waiting ? k.shell : _statusColor(k, s)))),
-        if (d?.now != null) _Row('Running', Text(d!.now!, style: mono(context, size: 12, color: k.ink))),
+        DetailRow('Status', Text(status, style: TextStyle(fontSize: 13, color: waiting ? k.shell : _statusColor(k, s)))),
+        if (d?.now != null) DetailRow('Running', Text(d!.now!, style: mono(context, size: 12, color: k.ink))),
         if (task != null || s.activeWorkCount > 0)
-          _Row(
+          DetailRow(
             'Task',
             Text.rich(
                 TextSpan(children: [
@@ -457,16 +456,16 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
             onTap: task == null ? null : () => showHandoff(context, task),
           ),
         if (jobs.isNotEmpty)
-          _Row('Shells', Text(AgentJob.counts(jobs).join(' · '), style: TextStyle(fontSize: 13, color: k.shell)),
+          DetailRow('Shells', Text(AgentJob.counts(jobs).join(' · '), style: TextStyle(fontSize: 13, color: k.shell)),
               onTap: s.sessionName == null && widget.onJobs == null ? null : _jobs),
         if (subs.isNotEmpty)
-          _Row(
+          DetailRow(
             'Subagents',
             Text('${subs.length}${running.isNotEmpty ? ' · ${running.length} running' : ''}',
                 style: const TextStyle(fontSize: 13)),
             onTap: () => _showSubagents(subs),
           ),
-        _Row('Last active', Text(last == null ? '—' : agoPhrase(last), style: TextStyle(fontSize: 13, color: k.muted))),
+        DetailRow('Last active', Text(last == null ? '—' : agoPhrase(last), style: TextStyle(fontSize: 13, color: k.muted))),
       ]),
     ];
   }
@@ -483,13 +482,13 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
     return [
       const SizedBox(height: 16),
       Section('Model & context', children: [
-        _Row(
+        DetailRow(
             'Model',
             Text(
                 [if (model != null) modelLabel(model) else 'default', if (s.effort != null) 'effort ${s.effort}']
                     .join(' · '),
                 style: const TextStyle(fontSize: 13))),
-        _Row(
+        DetailRow(
           'Permissions',
           Text.rich(
               TextSpan(children: [
@@ -502,7 +501,7 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
         ),
         // A row like the others, its value on the right; the bar sits under it, in the same list item (no divider between).
         Column(mainAxisSize: MainAxisSize.min, children: [
-        _Row(
+        DetailRow(
           'Context',
           Text(
               [
@@ -518,7 +517,7 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
         ),
         if (pct != null) Padding(padding: const EdgeInsets.fromLTRB(14, 0, 14, 8), child: ContextBar(pct)),
         ]),
-        _Row(
+        DetailRow(
             'Usage',
             Text(
                 [
@@ -562,12 +561,12 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
         if (p.$2.toString() != git?.pr?.url) p
     ];
     final rows = <Widget>[
-      _Row(
+      DetailRow(
           'Worktree',
           Text(s.cwd == null ? '—' : (worktreeName(s.cwd) ?? 'main checkout'),
               style: mono(context, size: 12, color: k.ink))),
       if (git != null && git.isRepo)
-        _Row(
+        DetailRow(
           'Branch',
           Text(
               [
@@ -579,9 +578,9 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
           onTap: () => showGitSheet(context, git),
         )
       else if (s.cwd != null && !_gitTried && d == null)
-        _Row('Branch', Text('Reading over SSH…', style: TextStyle(fontSize: 13, color: k.muted))),
+        DetailRow('Branch', Text('Reading over SSH…', style: TextStyle(fontSize: 13, color: k.muted))),
       if (d != null)
-        _Row(
+        DetailRow(
           'This session',
           Text.rich(
               TextSpan(children: [
@@ -596,16 +595,16 @@ class _SeatSheetBodyState extends State<SeatSheetBody> {
               style: const TextStyle(fontSize: 13)),
         ),
       if (git?.pr case final pr?)
-        _Row(
+        DetailRow(
           'PR',
           Text('#${pr.number} ${pr.title} · ${prLine(pr)}', style: const TextStyle(fontSize: 13)),
           onTap: pr.url == null ? null : () => launchUrl(Uri.parse(pr.url!), mode: LaunchMode.externalApplication),
           external: true,
         ),
       for (final (title, url) in prs)
-        _Row('Opened PR', Text(title, style: const TextStyle(fontSize: 13)),
+        DetailRow('Opened PR', Text(title, style: const TextStyle(fontSize: 13)),
             onTap: () => launchUrl(url, mode: LaunchMode.externalApplication), external: true),
-      if (s.cwd != null) _Row('Folder', Text(displayPath(s.cwd!), style: mono(context, size: 12, color: k.muted))),
+      if (s.cwd != null) DetailRow('Folder', Text(displayPath(s.cwd!), style: mono(context, size: 12, color: k.muted))),
     ];
     return [
       const SizedBox(height: 16),
@@ -650,48 +649,6 @@ class SeatHeader extends StatelessWidget {
       ),
       ...trailing,
     ]);
-  }
-}
-
-class _Row extends StatelessWidget {
-  const _Row(this.label, this.value, {this.onTap, this.external = false, this.icon});
-  final String label;
-
-  /// An action row's leading icon: 20 dp muted, 12 dp gap, like the app's other card action rows.
-  final IconData? icon;
-  final Widget? value;
-  final VoidCallback? onTap;
-
-  /// ↗ instead of ›: it leaves the app.
-  final bool external;
-
-  @override
-  Widget build(BuildContext context) {
-    final k = Tokens.of(context);
-    final row = ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 40),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
-          if (icon != null) ...[Icon(icon, size: 20, color: k.muted), const SizedBox(width: 12)],
-          if (value == null)
-            Expanded(child: Text(label, style: const TextStyle(fontSize: 14)))
-          else ...[
-            SizedBox(width: 96, child: Text(label, style: TextStyle(fontSize: 13, color: k.muted))),
-            Expanded(child: value!),
-          ],
-          SizedBox(
-            width: 28,
-            child: onTap == null
-                ? null
-                : external
-                    ? Icon(Icons.north_east, size: 16, color: k.faint)
-                    : const Chevron(),
-          ),
-        ]),
-      ),
-    );
-    return onTap == null ? row : InkWell(onTap: onTap, child: row);
   }
 }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/terminal/transport.dart';
 import 'package:pocket_rig/ui/agent_header.dart';
 import 'package:pocket_rig/ui/chat_screen.dart';
@@ -55,5 +56,27 @@ void main() {
     expect((name.dy - terminal.dy).abs(), lessThan(6), reason: 'one row, not stacked lines');
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('the branch chip has the worktree\'s name under it for a seat in a worktree, and nothing under it in the main checkout', (tester) async {
+    tester.view.physicalSize = const Size(1000, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    Widget header(String cwd) => MaterialApp(
+        home: Scaffold(
+            body: AgentHeader(
+                seat: Seat.fromJson({'rigId': 'r', 'logicalId': 'x', 'runtime': 'claude-code', 'cwd': cwd}),
+                title: 'x',
+                subtitle: const Text('sub'),
+                menuTooltip: 'Menu',
+                onMenu: () {},
+                branch: 'fix-ci')));
+    await tester.pumpWidget(header('/w/app/.claude/worktrees/api-retry'));
+    expect(find.text('fix-ci'), findsOneWidget);
+    expect(find.text('api-retry'), findsOneWidget);
+    expect(tester.getTopLeft(find.text('api-retry')).dy, greaterThan(tester.getBottomLeft(find.text('fix-ci')).dy - 1));
+    await tester.pumpWidget(header('/w/app'));
+    expect(find.text('fix-ci'), findsOneWidget);
+    expect(find.text('api-retry'), findsNothing);
   });
 }

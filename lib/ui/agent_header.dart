@@ -63,13 +63,22 @@ class AgentHeader extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [subtitle, Text(limit, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: limitColor(k)))]);
+    final worktree = worktreeName(s?.cwd);
     final chip = branch == null
         ? null
-        : Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(border: Border.all(color: k.border), borderRadius: BorderRadius.circular(kRadius)),
-            child: Text(branch!, style: mono(context, size: 11, color: k.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
-          );
+        : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.end, children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              decoration: BoxDecoration(border: Border.all(color: k.border), borderRadius: BorderRadius.circular(kRadius)),
+              child: Text(branch!, style: mono(context, size: 11, color: k.muted), maxLines: 1, overflow: TextOverflow.ellipsis),
+            ),
+            // Under the branch: the worktree the seat runs in (nothing in the main checkout).
+            if (worktree != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(worktree, style: mono(context, size: 11, color: k.faint), maxLines: 1, overflow: TextOverflow.ellipsis),
+              ),
+          ]);
     final name = Text(title, style: t.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis);
     return Material(
       color: k.ground,

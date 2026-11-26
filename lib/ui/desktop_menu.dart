@@ -14,25 +14,52 @@ const ActionRow menuBreak = (Icons.horizontal_rule, '', null, null);
 bool isMenuBreak(ActionRow r) => r.$2.isEmpty;
 
 Offset _pointer = Offset.zero;
+Rect? _button;
+DateTime _downAt = DateTime(0);
 bool _tracking = false;
 
-/// Where the mouse last went down: a menu opened from a click or a right click starts there. Caller code stays
-/// the same for a ⋯ button, a row's right click and a long press.
-void _trackPointer() {
+/// Where the pointer last went down, and the outermost small box (a button: 48dp or less) a primary press landed on. A menu opened
+/// by that press sits under the button; one opened by a right click or a long press starts at the pointer. Call sites
+/// stay the same for a ⋯ button, a row's right click and a long press. Installed once, at launch (main).
+void trackMenuAnchor() {
   if (_tracking) return;
   _tracking = true;
   GestureBinding.instance.pointerRouter.addGlobalRoute((e) {
-    if (e is PointerDownEvent) _pointer = e.position;
+    if (e is! PointerDownEvent) return;
+    _pointer = e.position;
+    _downAt = DateTime.now();
+    _button = null;
+    if (e.buttons != kPrimaryButton) return;
+    final hit = HitTestResult();
+    GestureBinding.instance.hitTestInView(hit, e.position, e.viewId);
+    for (final entry in hit.path) {
+      final t = entry.target;
+      if (t is RenderBox && t.hasSize && t.size.width <= 48 && t.size.height <= 48) {
+        // The path runs inside out: the last small box is the button, not the icon in it.
+        _button = t.localToGlobal(Offset.zero) & t.size;
+      }
+    }
   });
+}
+
+const _menuWidth = 220.0;
+
+/// Under the button, its right edge on the menu's when the button is in the right half of the window, else the left
+/// edges together; at the pointer for a right click or a press held long enough to be a long press.
+Offset _startFor(BuildContext context) {
+  final b = _button;
+  if (b == null || DateTime.now().difference(_downAt) > const Duration(milliseconds: 450)) return _pointer;
+  final right = b.center.dx > MediaQuery.sizeOf(context).width / 2;
+  return Offset(right ? b.right - _menuWidth : b.left, b.bottom + 4);
 }
 
 /// The Mac's ⋯ and right-click menu: a compact popup at the pointer (or at [at]), 28dp rows, an icon, no subtitles, a
 /// separator between groups, the destructive actions red and last. Hover, ↑ ↓, Return and Escape are MenuAnchor's. The
 /// chosen action runs as the menu closes. The phone shows [showActionSheet] with the same rows.
 Future<void> showDesktopMenu(BuildContext context, ActionRows rows, {Offset? at}) {
-  _trackPointer();
+  trackMenuAnchor();
   final done = Completer<void>();
-  final start = at ?? _pointer;
+  final start = at ?? _startFor(context);
   late OverlayEntry entry;
   entry = OverlayEntry(
       builder: (_) => _MenuHost(

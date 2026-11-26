@@ -97,4 +97,38 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     }
   });
+
+  testWidgets('a ⋯ opens under its button: left edges together on the left, right edges together on the right', (tester) async {
+    trackMenuAnchor();
+    Future<void> tapAt(Alignment where, {bool hold = false}) async {
+      await tester.pumpWidget(MaterialApp(
+        theme: buildTheme(Tokens.light, Brightness.light),
+        home: Scaffold(
+            body: Align(
+                alignment: where,
+                child: Builder(builder: (c) => IconButton(tooltip: 'more', onPressed: () => showDesktopMenu(c, rows()), icon: const Icon(Icons.more_horiz))))),
+      ));
+      final g = await tester.startGesture(tester.getCenter(find.byTooltip('more')));
+      if (hold) await tester.pump(const Duration(milliseconds: 600));
+      await g.up();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    ran.clear();
+    await tapAt(Alignment.topLeft);
+    var button = tester.getRect(find.byType(IconButton));
+    var item = tester.getRect(find.widgetWithText(MenuItemButton, 'Open chat'));
+    expect(item.left - 5, closeTo(button.left, 2), reason: 'the menu\'s left edge (4 padding, 1 border) is the button\'s');
+    expect(item.top - 5, closeTo(button.bottom + 4, 2), reason: 'under it');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 200));
+
+    await tapAt(Alignment.topRight);
+    button = tester.getRect(find.byType(IconButton));
+    item = tester.getRect(find.widgetWithText(MenuItemButton, 'Open chat'));
+    expect(item.right + 5, closeTo(button.right, 2), reason: 'the right edges together');
+    await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+    await tester.pump(const Duration(milliseconds: 200));
+  });
 }

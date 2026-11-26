@@ -23,6 +23,7 @@ import 'ui/debug_overlay_setting.dart';
 import 'ui/deep_links.dart';
 import 'ui/desktop_shell.dart';
 import 'ui/needs_you_banner.dart';
+import 'ui/desktop_menu.dart' show trackMenuAnchor;
 import 'ui/open_agents_on.dart';
 import 'ui/status_shape.dart' show warmRuntimeLogos;
 import 'ui/theme.dart';
@@ -35,6 +36,7 @@ Future<void> main() async {
   await store.load();
   await loadAppearance();
   await loadDebugOverlay();
+  trackMenuAnchor();
   await loadOpenAgentsOn();
   await loadAgentPanels();
   persistHostKeys = store.save;

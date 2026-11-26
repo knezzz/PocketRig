@@ -59,8 +59,11 @@ bool tilesEnlarge(String rigId, String seat) {
 /// An agent's terminal from a chat on the Mac: when the rig's tiles are alive (its host is on a route under this chat) the tile
 /// enlarges and this chat goes, so the agent keeps its one client; false when there are no such tiles (open a terminal screen).
 bool terminalInTile(BuildContext context, Seat seat) {
-  if (!isDesktop || !TilesScreen.tiled(seat) || !RigHostState.isLive(seat.rigId)) return false;
-  Navigator.of(context).maybePop();
+  final host = RigHostState.liveFor(seat.rigId);
+  if (!isDesktop || !TilesScreen.tiled(seat) || host == null) return false;
+  // Back to the host, past anything between it and this chat (Agent details...).
+  final route = host.route;
+  Navigator.of(context).popUntil((r) => r == route || r.isFirst);
   // After the chat has left, the tiles' route is the current one and takes the request.
   WidgetsBinding.instance.addPostFrameCallback((_) => tilesEnlarge(seat.rigId, seat.logicalId));
   return true;
@@ -136,7 +139,20 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
     super.dispose();
   }
 
+  /// Behind the rig page (a host keeps the tiles alive, tickers off) the poll waits; coming back refreshes at once.
+  bool _shown = true;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final shown = TickerMode.valuesOf(context).enabled;
+    final back = shown && !_shown;
+    _shown = shown;
+    if (back) _refresh();
+  }
+
   Future<void> _refresh() async {
+    if (!mounted || !_shown) return;
     final api = AppScope.clientOf(context);
     if (api == null) return;
     try {
@@ -179,7 +195,8 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
     final k = Tokens.of(context);
     final enlarged = _seats.indexWhere((s) => s.logicalId == _enlarged);
     // The sidebar marks the enlarged agent, else the rig.
-    showsInPanel(context, enlarged >= 0 ? seatPanelKey(_seats[enlarged]) : 'rig:${widget.rig.id}');
+    // Only while the tiles are the screen on show: behind the rig page (a host keeps them alive) they leave the sidebar alone.
+    if (_shown) showsInPanel(context, enlarged >= 0 ? seatPanelKey(_seats[enlarged]) : 'rig:${widget.rig.id}');
     final n = _seats.length;
     final cols = n == 0 ? 1 : math.sqrt(n).ceil();
     final rows = n == 0 ? 1 : (n / cols).ceil();

@@ -51,20 +51,30 @@ class RigHostState extends State<RigHost> {
         if (_mode == RigMode.tiles) _tilesBuilt = true;
       });
 
-  /// The rigs whose host is mounted (on any route): a chat over it sends its agent's Terminal to the tile.
-  static final _live = <String, RigHostState>{};
-  static bool isLive(String rigId) => _live.containsKey(rigId);
+  /// The rigs' hosts that are mounted (on any route), newest last: a chat over one sends its agent's Terminal and its Rig details
+  /// to it instead of opening a second client or a second host.
+  static final _live = <String, List<RigHostState>>{};
+  static bool isLive(String rigId) => _live[rigId]?.isNotEmpty ?? false;
+  static RigHostState? liveFor(String rigId) => _live[rigId]?.lastOrNull;
+
+  /// This host's route, to pop back to.
+  Route<dynamic>? get route => ModalRoute.of(context);
+
+  /// Shows the rig's page (Rig details from a chat over this host).
+  void showPage() {
+    if (_mode != RigMode.rig) setState(() => _mode = RigMode.rig);
+  }
 
   @override
   void initState() {
     super.initState();
-    _live[widget.rig.id] = this;
+    (_live[widget.rig.id] ??= []).add(this);
     enlargeRequest.addListener(_onEnlarge);
   }
 
   @override
   void dispose() {
-    if (identical(_live[widget.rig.id], this)) _live.remove(widget.rig.id);
+    _live[widget.rig.id]?.remove(this);
     enlargeRequest.removeListener(_onEnlarge);
     super.dispose();
   }
@@ -73,7 +83,7 @@ class RigHostState extends State<RigHost> {
   /// agent's only one. From the page that means going to the tiles first.
   void _onEnlarge() {
     final r = enlargeRequest.value;
-    if (r == null || r.rigId != widget.rig.id || _mode == RigMode.tiles) return;
+    if (r == null || r.rigId != widget.rig.id || _mode == RigMode.tiles || !(ModalRoute.of(context)?.isCurrent ?? false)) return;
     final built = _tilesBuilt;
     setState(() {
       _mode = RigMode.tiles;

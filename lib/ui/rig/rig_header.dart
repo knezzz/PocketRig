@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_icon.dart';
 import '../../models.dart';
 
-import 'rig_host.dart' show RigHost, RigMode;
+import 'rig_host.dart' show RigHost, RigHostState, RigMode;
 import '../theme.dart';
 
 /// The rig page's actions: New (filled), Message all, Room, Reminders. A null callback greys that one out.
@@ -61,6 +61,15 @@ class RigDetailsButton extends StatelessWidget {
       onPressed: () {
         final host = RigHost.maybeOf(context);
         if (host != null) return host.toggle();
+        // A chat over this rig's live host (the enlarged tile's Chat): back to that host, on the page, not a second host (a
+        // second set of connections).
+        final live = RigHostState.liveFor(rig.id);
+        if (live != null) {
+          live.showPage();
+          final route = live.route;
+          Navigator.of(context).popUntil((r) => r == route || r.isFirst);
+          return;
+        }
         Navigator.of(context).pushReplacement(
             MaterialPageRoute<void>(builder: (_) => RigHost(rig: rig, projectName: projectName, initial: RigMode.rig)));
       });

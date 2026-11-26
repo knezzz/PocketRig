@@ -15,11 +15,19 @@ import 'chat_cache.dart';
 /// Off under `flutter test`, which also runs on macOS; tests turn it on themselves.
 bool isDesktop = !kIsWeb && Platform.isMacOS && !Platform.environment.containsKey('FLUTTER_TEST');
 
+const _demoBuild = bool.fromEnvironment('POCKETRIG_DEMO');
+
+/// The macOS keychain options. The legacy keychain needs no signing team, so local macOS builds can save hosts. The demo build
+/// (scripts/demo-build.sh) keeps to its own service name: a read of another app's item is what makes macOS ask the person for
+/// permission ("wants to use your confidential information"), and the real app's items are under the default one. The demo
+/// replaces the storage with an in-memory one anyway; this keeps a read that gets past that from reaching the real items.
+@visibleForTesting
+MacOsOptions hostStoreMacOptions({bool demo = _demoBuild}) => MacOsOptions(
+    useDataProtectionKeyChain: false, accountName: demo ? 'flutter_secure_storage_service_demo' : AppleOptions.defaultAccountName);
+
 /// Hosts, including their SSH keys, live in the platform keychain/keystore.
 class HostStore extends ChangeNotifier {
-  HostStore({FlutterSecureStorage? storage}) : _storage = storage ??
-            // The legacy keychain needs no signing team, so local macOS builds can save hosts.
-            const FlutterSecureStorage(mOptions: MacOsOptions(useDataProtectionKeyChain: false));
+  HostStore({FlutterSecureStorage? storage}) : _storage = storage ?? FlutterSecureStorage(mOptions: hostStoreMacOptions());
 
   final FlutterSecureStorage _storage;
   static const _key = 'pocketrig.hosts.v1';

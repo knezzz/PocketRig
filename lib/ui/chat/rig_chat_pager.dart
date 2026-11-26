@@ -142,7 +142,9 @@ class _RigChatPagerState extends State<RigChatPager> {
     return Scaffold(
       body: Column(children: [
         // The Mac: the rig's own fixed row above the agent's header.
-        if (isDesktop && r != null) RigBar(rig: r.rig, seats: r.seats, projectName: projectNameOf(r.primaryCwd ?? r.rig.name)),
+        // Its Back is the screen's (as on the page and the tiles, so the icon and title do not move); the agent row has none.
+        if (isDesktop && r != null)
+          RigBar(rig: r.rig, seats: r.seats, projectName: projectNameOf(r.primaryCwd ?? r.rig.name), showBack: true),
         chatAgentHeader(
           context,
           seat: _pages.where((s) => s.logicalId == _selected).firstOrNull,
@@ -154,6 +156,7 @@ class _RigChatPagerState extends State<RigChatPager> {
           onGit: (g) => showGitSheet(context, g),
           // The Mac: the panels toggle in the agent row, left of the Chat | Terminal switch.
           extraActions: [if (isDesktop) const AgentPanelsToggle()],
+          showBack: !(isDesktop && r != null),
           tabs: _tabs.length > 1 ? SeatSwitcher(seats: _tabs, selected: _selected, onTap: _tapTab) : null,
         ),
         Expanded(

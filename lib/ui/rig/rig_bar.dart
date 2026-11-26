@@ -97,8 +97,11 @@ class RigBar extends StatelessWidget {
     final host = AppScope.of(context).active;
     return PageHeader(
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, RigWithSeats(rig, seats), host)),
-      host: qualified && AppScope.of(context).hosts.length > 1 ? host : null,
-      title: qualified ? '$projectName / ${host?.rigLabel(rig.name) ?? rig.name}' : (host?.rigLabel(rig.name) ?? rig.name),
+      // One line in every view (no host overline: it made the tiles' row taller than the page's and the chat's): the host, when
+      // there is more than one, ends the title.
+      title: qualified
+          ? '$projectName / ${host?.rigLabel(rig.name) ?? rig.name}${AppScope.of(context).hosts.length > 1 && host != null ? ' · ${host.name}' : ''}'
+          : (host?.rigLabel(rig.name) ?? rig.name),
       showBack: showBack,
       actions: rigBarActions(context,
           rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),

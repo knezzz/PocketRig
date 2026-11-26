@@ -8,7 +8,8 @@ import 'package:pocket_rig/ui/chat/rig_chat_pager.dart' show RigChatPager;
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
 import 'package:pocket_rig/ui/rig/rig_host.dart' show RigHost, RigMode;
 import 'package:pocket_rig/ui/rig_screen.dart';
-import 'package:pocket_rig/ui/tiles_screen.dart' show TilesScreen;
+import 'package:pocket_rig/ui/agent_header.dart' show AgentHeader;
+import 'package:pocket_rig/ui/tiles_screen.dart' show TilesScreen, tilesEnlarge;
 import 'package:pocket_rig/ui/app_icon.dart';
 import 'package:pocket_rig/ui/host_color.dart' show contrastRatio;
 import 'package:pocket_rig/ui/status_shape.dart';
@@ -156,11 +157,28 @@ void main() {
       return rects;
     }
 
+    // The rig's title and its icon: the same left, top and height in every view (the title's width is its text's).
+    List<double> title() {
+      final head = find.byType(PageHeader).first;
+      final text = find.descendant(of: head, matching: find.textContaining('conveyor')).first;
+      final icon = find.descendant(of: head, matching: find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.rig));
+      final t = tester.getRect(text), i = tester.getRect(icon);
+      return [i.left, i.top, i.height, t.left, t.top, t.height];
+    }
+
     final onPage = row();
+    final titleOnPage = title();
     await tester.tap(find.descendant(of: find.byType(RigScreen), matching: find.text('Rig details')));
     await settle();
     expect(find.byType(TilesScreen), findsOneWidget);
     expect(row(), onPage, reason: 'the tiles have the same row: every control at the same x and y');
+    expect(title(), titleOnPage, reason: 'and the same title: one line, the same height');
+    // An enlarged tile: the same rig row, and the agent's row under it.
+    tilesEnlarge('r-conveyor', 'lead');
+    await settle();
+    expect(find.byType(AgentHeader), findsOneWidget);
+    expect(row(), onPage, reason: 'the enlarged tile has the same rig row');
+    expect(title(), titleOnPage, reason: 'and the same title');
     await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')));
     await settle();
     expect(find.byType(RigScreen), findsOneWidget);
@@ -170,6 +188,7 @@ void main() {
         MaterialPageRoute<void>(builder: (_) => ChatScreen(rigName: 'conveyor', seat: lead, asChat: true)));
     await settle();
     expect(row(), onPage, reason: 'the chat has the same row: every control at the same x and y, the ⋯ at the same right edge');
+    expect(title(), titleOnPage, reason: 'the chat has the same title: its height does not change when you flip between views');
     await go(RigChatPager, 'Rig details', RigScreen); // from the chat: the rig's page, in a host
     expect(depth.routes, before, reason: 'the switches added no route: one Back leaves the rig');
     await _close(tester);

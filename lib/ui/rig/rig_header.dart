@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import '../app_icon.dart';
 import '../../models.dart';
 
-import '../rig_screen.dart' show RigScreen;
-import '../tiles_screen.dart' show TilesScreen;
+import 'rig_host.dart' show RigHost, RigMode;
 import '../theme.dart';
 
 /// The rig page's actions: New (filled), Message all, Room, Reminders. A null callback greys that one out.
@@ -45,8 +44,9 @@ List<Widget> rigHeaderButtons(BuildContext context, RigActionSet actions) {
   ];
 }
 
-/// 'Rig details' in a rig view's header on the Mac: opens the rig's page (Agents, Messages, Progress, Code) in this view's place
-/// (replaced, not pushed, so Back leaves the rig). On the rig page itself it is [selected]: shown, and nothing to press.
+/// 'Rig details' in a rig view's header on the Mac, a toggle: the rig's page (Agents, Messages, Progress, Code) when it is not
+/// on show, the tiles when it is ([selected]). In the rig's host that is a switch inside one screen (the tiles stay alive); from
+/// an agent's chat, which is no host, it replaces the chat with the rig's host on the page (Back leaves the rig).
 class RigDetailsButton extends StatelessWidget {
   const RigDetailsButton({super.key, required this.rig, required this.projectName, this.selected = false});
   final Rig rig;
@@ -58,22 +58,12 @@ class RigDetailsButton extends StatelessWidget {
       label: 'Rig details',
       icon: Icons.info_outline,
       selected: selected,
-      onPressed: () => Navigator.of(context)
-          .pushReplacement(MaterialPageRoute<void>(builder: (_) => RigScreen(rig: rig, projectName: projectName))));
-}
-
-/// 'Tiles' in the rig page's header on the Mac: the rig's agents as live terminals, in the page's place (Back leaves the rig).
-class RigTilesButton extends StatelessWidget {
-  const RigTilesButton({super.key, required this.rig, required this.projectName});
-  final RigWithSeats rig;
-  final String projectName;
-
-  @override
-  Widget build(BuildContext context) => _RigViewButton(
-      label: 'Tiles',
-      icon: Icons.grid_view,
-      onPressed: () => Navigator.of(context).pushReplacement(
-          MaterialPageRoute<void>(builder: (_) => TilesScreen(rig: rig.rig, seats: rig.seats, projectName: projectName))));
+      onPressed: () {
+        final host = RigHost.maybeOf(context);
+        if (host != null) return host.toggle();
+        Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => RigHost(rig: rig, projectName: projectName, initial: RigMode.rig)));
+      });
 }
 
 class _RigViewButton extends StatelessWidget {
@@ -96,7 +86,7 @@ class _RigViewButton extends StatelessWidget {
       child: Semantics(
         selected: selected,
         child: OutlinedButton(
-          onPressed: selected ? null : onPressed,
+          onPressed: onPressed,
           style: style.copyWith(side: WidgetStatePropertyAll(BorderSide(color: selected ? k.ink : k.border))),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(icon, size: 16),

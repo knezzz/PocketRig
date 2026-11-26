@@ -31,7 +31,7 @@ import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
 import 'action_rows.dart' show showActionRows;
 import 'rig/seat_actions.dart' show seatMenuRows;
 import 'theme.dart';
-import 'tiles_screen.dart';
+import 'rig/rig_host.dart' show RigMode, rigRoute;
 
 /// Shift+Enter types a newline instead of submitting: ESC CR, which Claude Code binds (its /terminal-setup).
 FocusOnKeyEventCallback shiftEnterNewline(void Function(String) send) => (node, event) {
@@ -326,7 +326,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
       final cwd = target.seat.cwd;
       final project = cwd == null ? rig.name : folderName(cwd);
       Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => TilesScreen(rig: rig, seats: seats, projectName: project)));
+          MaterialPageRoute(builder: (_) => rigRoute(rig, project, seats: seats, mode: RigMode.tiles)));
     } catch (e) {
       if (mounted) toast(context, e.toString());
     }

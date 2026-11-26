@@ -21,7 +21,7 @@ import 'detail_row.dart';
 import 'agent_view_switch.dart' show AgentView;
 import 'kit.dart';
 import 'open_agents_on.dart';
-import 'rig_screen.dart';
+import 'rig/rig_host.dart' show rigRoute;
 import 'terminal_screen.dart';
 import 'theme.dart';
 
@@ -419,7 +419,7 @@ class _LooseAgentScreenState extends State<LooseAgentScreen> {
                       Panel(
                         borderColor: k.ink,
                         onTap: () => Navigator.of(context).pushReplacement(
-                            MaterialPageRoute(builder: (_) => RigScreen(rig: _rig!.rig, projectName: a.project ?? ''))),
+                            MaterialPageRoute(builder: (_) => rigRoute(_rig!.rig, a.project ?? ''))),
                         child: Text('✓ ${a.name} is now $_adopted in ${_rig!.rig.name} · Open rig ›',
                             style: const TextStyle(fontSize: 14)),
                       )

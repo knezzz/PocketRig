@@ -12,7 +12,7 @@ import 'check_row.dart';
 import 'common.dart';
 import 'desktop_shell.dart' show detailNavigator, shownDetailPane;
 import 'kit.dart';
-import 'rig_screen.dart';
+import 'rig/rig_host.dart' show rigRoute;
 import 'status_shape.dart';
 import 'theme.dart';
 
@@ -203,7 +203,7 @@ class _LaunchSheetState extends State<LaunchSheet> {
         action: id == null ? null : 'Open', onAction: id == null ? null : () async {
       final rig = await api.rig(id);
       if (rig != null && nav.mounted) {
-        unawaited((shownDetailPane() ?? nav).push(MaterialPageRoute<void>(builder: (_) => RigScreen(rig: rig, projectName: widget.projectName))));
+        unawaited((shownDetailPane() ?? nav).push(MaterialPageRoute<void>(builder: (_) => rigRoute(rig, widget.projectName))));
       }
     });
   }
@@ -264,7 +264,7 @@ class _LaunchSheetState extends State<LaunchSheet> {
     // The desktop dialog sits on the root navigator, outside the detail pane, so ask for the pane directly.
     final target = shownDetailPane() ?? detailNavigator(context);
     own.pop();
-    final route = MaterialPageRoute<void>(builder: (_) => RigScreen(rig: rig, projectName: widget.projectName));
+    final route = MaterialPageRoute<void>(builder: (_) => rigRoute(rig, widget.projectName));
     // The phone swaps the launching page; the desktop opens the rig in the detail pane beside the list.
     if (identical(target, own)) {
       unawaited(target.pushReplacement(route));

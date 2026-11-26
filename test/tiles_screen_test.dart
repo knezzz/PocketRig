@@ -5,6 +5,7 @@ import 'package:pocket_rig/data/host_store.dart' show isDesktop;
 import 'package:pocket_rig/data/projects.dart' show groupByWorktree;
 import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
+import 'package:pocket_rig/ui/rig/rig_host.dart' show RigHost;
 import 'package:pocket_rig/ui/rig_screen.dart' show RigScreen;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/terminal/transport.dart';
@@ -70,6 +71,61 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(ran.where((c) => c.contains('cancel')), isNotEmpty, reason: 'leaves copy mode');
     expect(find.text('Back to live'), findsNothing);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('Rig details toggles the rig page and the tiles in one screen: the tiles stay alive while the page shows, no reconnect, one client per seat; an agent opened from the page enlarges its tile',
+      (tester) async {
+    final store = await installFakes();
+    isDesktop = true;
+    addTearDown(() => isDesktop = false);
+    var opened = 0;
+    debugOpenTerminal = (h, t) async {
+      opened++;
+      return FakeTerminal('view');
+    };
+    final rig = rigFromFixture('r-conveyor');
+    final seats = [for (final n in nodes['r-conveyor']!) Seat.fromJson(n)];
+    final n = seats.where((s) => s.isAgent && s.state != SeatState.stopped).length;
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final routes = _Depth();
+    await tester.pumpWidget(MaterialApp(
+        navigatorObservers: [routes],
+        home: phone(store, RigHost(rig: rig, seats: seats, projectName: 'app'), width: 1400, height: 900)));
+    await tester.pump(const Duration(milliseconds: 200));
+    final before = routes.count;
+    expect(find.byType(TerminalView), findsNWidgets(n));
+    expect(opened, n);
+    final tilesState = tester.state(find.byType(TilesScreen));
+    final detailsButton = find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details'));
+
+    await tester.tap(detailsButton);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(RigScreen), findsOneWidget, reason: 'Rig details shows the page');
+    expect(find.text('Tiles'), findsNothing, reason: 'no Tiles button: Rig details toggles');
+    expect(find.byType(TilesScreen), findsNothing, reason: 'the tiles are hidden');
+    expect(find.byType(TilesScreen, skipOffstage: false), findsOneWidget, reason: 'but still mounted');
+    expect(opened, n, reason: 'no new connection while the page shows');
+
+    await tester.tap(find.descendant(of: find.byType(RigScreen), matching: find.text('Rig details')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(TilesScreen), findsOneWidget);
+    expect(find.byType(RigScreen), findsNothing);
+    expect(tester.state(find.byType(TilesScreen)), same(tilesState), reason: 'the same tiles, not rebuilt');
+    expect(find.byType(TerminalView), findsNWidgets(n));
+    expect(opened, n, reason: 'back on the tiles: no reconnect, one client per seat');
+    expect(routes.count, before, reason: 'two screens, one route: Back leaves the rig from either');
+
+    // An agent opened from the page: the tile's client is the only one (it enlarges).
+    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tilesEnlarge('r-conveyor', 'lead'), isTrue, reason: 'the host takes it even while the page shows');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(TilesScreen), findsOneWidget, reason: 'the tiles come up');
+    expect(find.byType(RigScreen), findsNothing);
+    expect(opened, n, reason: 'enlarging used the tile\'s own client');
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });
@@ -145,7 +201,7 @@ void main() {
     final r = RigWithSeats(rig, seats);
     isDesktop = true;
     addTearDown(() => isDesktop = false);
-    expect(rigHome(r, 'app'), isA<TilesScreen>());
+    expect(rigHome(r, 'app'), isA<RigHost>());
     isDesktop = false;
     expect(rigHome(r, 'app'), isA<RigScreen>(), reason: 'a plain rig tap on the phone: its details');
     final lead = seats.firstWhere((s) => s.isClaude && TilesScreen.tiled(s));
@@ -181,4 +237,15 @@ class _Recording extends FakeTerminal {
   final List<String> resizes;
   @override
   void resize(int cols, int rows) => resizes.add('${cols}x$rows');
+}
+
+/// The number of routes on the navigator: a push adds one, a replace none.
+class _Depth extends NavigatorObserver {
+  int count = 0;
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) => count++;
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) => count--;
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic>? previousRoute) => count--;
 }

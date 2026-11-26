@@ -23,7 +23,9 @@ import 'rig/overview_tab.dart';
 import 'rig/progress_tab.dart' show ProgressBody, RigDangerZone;
 import 'rig/rig_actions.dart';
 import 'rig/rig_bar.dart' show rigBarActions;
-import 'rig/rig_header.dart';
+import 'tiles_screen.dart' show TilesScreen, tilesEnlarge;
+import 'open_agents_on.dart' show openAgentsOn;
+import 'agent_view_switch.dart' show AgentView;
 import 'rig/work_queue_screen.dart' show isOpenQueueState;
 import 'rig/seat_sheet.dart';
 import 'spec_editor_screen.dart';
@@ -236,13 +238,21 @@ class _RigScreenState extends State<RigScreen> with Polling {
 
   void _push(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
 
-  void _openTerminal(Seat s) => _push(TerminalScreen(target: SeatTarget(_rig.name, s)));
+  /// An agent's terminal on the Mac opens in the rig's tiles, enlarged, so its one client is the tile's (a second would fight it
+  /// for the window); the host brings the tiles up. Otherwise (a phone, a rig without tiles) it is a screen of its own.
+  void _openTerminal(Seat s) {
+    if (isDesktop && TilesScreen.tiled(s) && tilesEnlarge(_rig.id, s.logicalId)) return;
+    _push(TerminalScreen(target: SeatTarget(_rig.name, s)));
+  }
   void _openChat(Seat s) => _push(ChatScreen(rigName: _rig.name, seat: s, asChat: true));
 
   /// Claude Code seats open as a chat; everything else as a terminal. Both
   /// screens switch to the other.
   // The chat on a phone; on desktop ChatScreen opens the terminal.
-  void _openSeat(Seat s) => _push(seatScreen(_rig.name, s));
+  void _openSeat(Seat s) {
+    if (isDesktop && openAgentsOn.value == AgentView.terminal && TilesScreen.tiled(s) && tilesEnlarge(_rig.id, s.logicalId)) return;
+    _push(seatScreen(_rig.name, s));
+  }
 
   /// A seat's ⋯ (and a long press on the Map): the seat sheet.
   Future<void> _seatSheet(Seat s) async {
@@ -306,19 +316,13 @@ class _RigScreenState extends State<RigScreen> with Polling {
             if (_rig.status != 'running') RigStatusLine(_rig),
           ]),
         ),
-        Row(children: [
-          Expanded(
-            child: TabStrip<_RigTab>(
-              values: tabs,
-              labels: [for (final t in tabs) t == _RigTab.work && open > 0 ? 'Work $open' : t.label],
-              selected: tab,
-              onChanged: (t) => setState(() => _tab = t),
-              semanticLabel: 'Rig views',
-            ),
-          ),
-          // The Mac only: every running agent of the rig as a live terminal.
-          if (isDesktop && !stopped) RigTilesButton(rig: withSeats, projectName: widget.projectName),
-        ]),
+        TabStrip<_RigTab>(
+          values: tabs,
+          labels: [for (final t in tabs) t == _RigTab.work && open > 0 ? 'Work $open' : t.label],
+          selected: tab,
+          onChanged: (t) => setState(() => _tab = t),
+          semanticLabel: 'Rig views',
+        ),
       ]),
     );
     return Scaffold(

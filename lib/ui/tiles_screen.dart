@@ -21,6 +21,7 @@ import 'common.dart' show toast;
 import 'chat_screen.dart' show seatScreen;
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
 import 'rig/rig_bar.dart' show rigBarActions;
+import 'rig/rig_host.dart' show RigHost;
 import 'rig_screen.dart' show RigScreen;
 import 'kit.dart' show PageHeader;
 import 'progress_bar.dart' show ContextBar;
@@ -34,7 +35,7 @@ import 'theme.dart';
 /// agent opened over them as chat (a Claude agent) or terminal.
 Widget rigHome(RigWithSeats r, String projectName, {String? enlarge, Key? key}) {
   if (r.rig.status != 'stopped' && isDesktop) {
-    return TilesScreen(key: key, rig: r.rig, seats: r.seats, projectName: projectName, enlarge: enlarge);
+    return RigHost(key: key, rig: r.rig, seats: r.seats, projectName: projectName, enlarge: enlarge);
   }
   final seat = r.seats.where((s) => TilesScreen.tiled(s) && s.logicalId == enlarge).firstOrNull;
   return seat == null || r.rig.status == 'stopped' ? RigScreen(rig: r.rig, projectName: projectName) : seatScreen(r.rig.name, seat);

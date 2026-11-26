@@ -31,7 +31,7 @@ import 'status_shape.dart';
 import 'theme.dart';
 import 'busy.dart';
 import 'rig/rig_actions.dart';
-import 'rig_screen.dart';
+import 'rig/rig_host.dart' show rigRoute;
 import 'tiles_screen.dart' show rigHome;
 import 'spec_screen.dart';
 import 'terminal_screen.dart';
@@ -364,7 +364,7 @@ class _ProjectScreenState extends State<ProjectScreen> with Polling {
   void _rigMenu(RigWithSeats r, String label) => showRigActions(context, r.rig, r.seats,
       title: label,
       projectName: _name,
-      onOpen: () => _push(RigScreen(rig: r.rig, projectName: _name)),
+      onOpen: () => _push(rigRoute(r.rig, _name, seats: r.seats)),
       onWorktree: () => _startInWorktree(r));
 
   void _worktreeMenu(Worktree w, bool main, int agents) => showActionSheet(context, main ? 'Main checkout' : w.name, [
@@ -781,7 +781,7 @@ class _ProjectScreenState extends State<ProjectScreen> with Polling {
                               onPressed: () => _rigMenu(r, r.rig.name),
                             ),
                           ]),
-                    onTap: () => _push(RigScreen(rig: r.rig, projectName: _name)),
+                    onTap: () => _push(rigRoute(r.rig, _name, seats: r.seats)),
                     onLongPress: busyKeys.value.contains(r.rig.id) ? null : () => _rigMenu(r, r.rig.name),
                   ),
               ]),

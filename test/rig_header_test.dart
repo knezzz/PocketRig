@@ -6,6 +6,7 @@ import 'package:pocket_rig/ui/kit.dart' show KillBar, PageHeader;
 import 'package:pocket_rig/ui/rig/overview_tab.dart' show RigBody;
 import 'package:pocket_rig/ui/chat/rig_chat_pager.dart' show RigChatPager;
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
+import 'package:pocket_rig/ui/rig/rig_host.dart' show RigHost, RigMode;
 import 'package:pocket_rig/ui/rig_screen.dart';
 import 'package:pocket_rig/ui/tiles_screen.dart' show TilesScreen;
 import 'package:pocket_rig/ui/app_icon.dart';
@@ -96,40 +97,20 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('on the Mac the rig page has a Tiles button and Rig details selected; Tiles shows the tiles, whose Rig details button brings the page back; no List | Tiles anywhere',
-      (tester) async {
+  testWidgets('on the Mac the rig page has Rig details (selected) and no Tiles button, no List | Tiles', (tester) async {
     isDesktop = true;
     addTearDown(() => isDesktop = false);
     await _open(tester, const Size(1280, 800));
-    final onPage = find.descendant(of: find.byType(RigScreen), matching: find.text('Tiles'));
-    expect(onPage, findsOneWidget);
-    expect(find.text('List'), findsNothing, reason: 'no List | Tiles switch');
+    expect(find.text('List'), findsNothing);
+    expect(find.text('Tiles'), findsNothing, reason: 'Rig details toggles; there is no Tiles button');
     final details = find.descendant(of: find.byType(RigScreen), matching: find.widgetWithText(OutlinedButton, 'Rig details'));
     expect(details, findsOneWidget);
-    expect(tester.widget<OutlinedButton>(details).onPressed, isNull, reason: 'on the rig page it is selected, nothing to press');
-    expect(find.descendant(of: find.byType(RigScreen), matching: find.text('Chat')), findsNothing, reason: 'Chat is reached per agent');
-    expect(tester.getTopLeft(onPage).dx, greaterThan(tester.getTopLeft(find.widgetWithText(OutlinedButton, 'Reminders')).dx),
+    expect(tester.getTopLeft(details).dx, greaterThan(tester.getTopLeft(find.widgetWithText(OutlinedButton, 'Reminders')).dx),
         reason: 'right after Reminders');
-    await tester.tap(onPage);
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byType(TilesScreen), findsOneWidget);
-    expect(find.byType(RigScreen), findsNothing);
-    // Each tile's header says how much context its agent has used (the lead 62%); an agent with none known shows nothing.
-    final tiles = find.byType(TilesScreen);
-    expect(find.descendant(of: tiles, matching: find.text('62%')), findsOneWidget);
-    expect(find.descendant(of: tiles, matching: find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'context 62 percent used')), findsOneWidget);
-    expect(find.descendant(of: find.byType(TilesScreen), matching: find.text('Tiles')), findsNothing, reason: 'no switch on the tiles');
-    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')));
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 100));
-    }
-    expect(find.byType(RigScreen), findsOneWidget);
     await _close(tester);
   });
 
-  testWidgets('Tiles and Rig details replace each other, and the rig chat has Rig details too (Back leaves the rig)',
+  testWidgets('the same row on the page, the tiles and the chat; Rig details toggles page and tiles, and from the chat opens the page (one route throughout)',
       (tester) async {
     isDesktop = true;
     addTearDown(() => isDesktop = false);
@@ -140,7 +121,7 @@ void main() {
     final depth = _Depth();
     await tester.pumpWidget(MaterialApp(
         navigatorObservers: [depth],
-        home: phone(store, RigScreen(rig: rigFromFixture('r-conveyor'), projectName: 'app', initialTab: 0), width: 1280)));
+        home: phone(store, RigHost(rig: rigFromFixture('r-conveyor'), projectName: 'app', initial: RigMode.rig), width: 1280)));
     Future<void> settle() async {
       for (var i = 0; i < 10; i++) {
         await tester.pump(const Duration(milliseconds: 100));
@@ -177,16 +158,20 @@ void main() {
     }
 
     final onPage = row();
-    await go(RigScreen, 'Tiles', TilesScreen);
+    await tester.tap(find.descendant(of: find.byType(RigScreen), matching: find.text('Rig details')));
+    await settle();
+    expect(find.byType(TilesScreen), findsOneWidget);
     expect(row(), onPage, reason: 'the tiles have the same row');
-    await go(TilesScreen, 'Rig details', RigScreen);
+    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')));
+    await settle();
+    expect(find.byType(RigScreen), findsOneWidget);
     // The rig's chat (an agent opened from it takes its place here).
     final lead = seatFromFixture('r-conveyor', 'lead');
     Navigator.of(tester.element(find.byType(RigScreen))).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => ChatScreen(rigName: 'conveyor', seat: lead, asChat: true)));
     await settle();
     expect(row(), onPage, reason: 'the chat has the same row');
-    await go(RigChatPager, 'Rig details', RigScreen);
+    await go(RigChatPager, 'Rig details', RigScreen); // from the chat: the rig's page, in a host
     expect(depth.routes, before, reason: 'the switches added no route: one Back leaves the rig');
     await _close(tester);
   });

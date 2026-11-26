@@ -21,6 +21,14 @@ Rendered from the golden tests with fake data. Light on the left, dark on the ri
 
 ![Wide layout](docs/screenshots/1c_rigs_home_wide.png)
 
+## Install
+
+**macOS:** download `PocketRig-<version>-macos.zip` from [Releases](https://github.com/knezzz/PocketRig/releases), unzip it and move **PocketRig** to Applications. The app is signed with a Developer ID and notarized by Apple, so it opens without a warning. Releases are pre-releases until the first stable version.
+
+**iPhone and Android:** there are no published builds yet. Build from source (below).
+
+All platforms need a host running the OpenRig daemon, reachable over Tailscale or SSH. See [Host setup](#host-setup-once-per-machine).
+
 ## First run
 
 ```sh

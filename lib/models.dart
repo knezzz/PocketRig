@@ -748,6 +748,10 @@ String folderName(String path) {
   return parts.isEmpty ? '/' : parts.last;
 }
 
+/// Whether [path] is a user's home folder ('~', '/Users/x', '/home/x', '/root'): everything is under it, so it takes only
+/// what runs in it.
+bool isHomeFolder(String path) => RegExp(r'^(~|/Users/[^/]+|/home/[^/]+|/root)/?$').hasMatch(path);
+
 /// The main checkout [cwd] belongs to, or [cwd] when it isn't in a worktree.
 String mainCheckout(String cwd) => _worktreePath.firstMatch(cwd)?.group(1) ?? cwd;
 
@@ -788,8 +792,8 @@ class Project {
   final List<ProjectShell> shells = [];
   final bool pinned;
 
-  String get name => folderName(path);
-
+  /// The folder's name; 'Home' for the home folder (its path, '~', is the line under it).
+  String get name => isHomeFolder(path) ? 'Home' : folderName(path);
 
   /// How many needs-you items are in this project: set by `groupIntoProjects`, which orders cards by it.
   int attention = 0;

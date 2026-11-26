@@ -6,7 +6,10 @@ import 'needs_you.dart';
 /// folders show up even with no rig. Agents started by hand ([loose]) join
 /// the folder they run in. Worktrees count as their main checkout, unless
 /// pinned on their own.
-final _home = RegExp(r'^(~|/Users/[^/]+|/home/[^/]+|/root)/?$');
+/// Where a folder sits among the others: 0 a known project (pinned, or a rig runs there), 1 any other folder where only agents or
+/// shells run (or the '(no folder)' bucket), 2 the home folder, last. The sidebar and the Rigs home both list by it.
+int projectGroup(Project p) =>
+    isHomeFolder(p.path) ? 2 : (p.path != '(no folder)' && (p.pinned || p.rigs.isNotEmpty) ? 0 : 1);
 
 List<Project> groupIntoProjects(List<RigWithSeats> rigs, List<String> pinned,
     [List<LooseAgent> loose = const [], List<AttentionItem> attention = const [], List<ProjectShell> shells = const []]) {
@@ -16,7 +19,7 @@ List<Project> groupIntoProjects(List<RigWithSeats> rigs, List<String> pinned,
   }
   // A folder under another project's path (a worktree, a subfolder) joins it, whatever order the rigs come in.
   // A home folder takes only its own agents: everything is under it.
-  bool contains(String root, String cwd) => cwd == root || (!_home.hasMatch(root) && isUnder(cwd, root));
+  bool contains(String root, String cwd) => cwd == root || (!isHomeFolder(root) && isUnder(cwd, root));
   final cwds = [
     for (final r in rigs)
       if (r.primaryCwd case final c?) c,
@@ -54,11 +57,12 @@ List<Project> groupIntoProjects(List<RigWithSeats> rigs, List<String> pinned,
   }
   final list = byPath.values.toList()
     ..sort((a, b) {
-      // Needs-you first, then folders with rigs, then by name.
+      // Known projects (pinned, or with a rig) first, then the other folders where something runs, the home folder last;
+      // within each, needs-you first, then by name.
+      final byTier = projectGroup(a).compareTo(projectGroup(b));
+      if (byTier != 0) return byTier;
       final byAttention = b.attention.compareTo(a.attention);
       if (byAttention != 0) return byAttention;
-      final byRigs = (b.rigs.isNotEmpty || b.loose.isNotEmpty ? 1 : 0) - (a.rigs.isNotEmpty || a.loose.isNotEmpty ? 1 : 0);
-      if (byRigs != 0) return byRigs;
       return a.name.compareTo(b.name);
     });
   if (noFolder.rigs.isNotEmpty || noFolder.loose.isNotEmpty) list.add(noFolder);

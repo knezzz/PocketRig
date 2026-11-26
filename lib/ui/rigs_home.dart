@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../data/projects.dart' show projectGroup;
 import 'package:flutter/material.dart';
 
 import '../data/chat_cache.dart' show chatKey;
@@ -347,6 +348,8 @@ class _RigsHomeState extends State<RigsHome> {
         raw: (p) => _projectTier(host, p)!,
         name: (p) => projectHeading(p).title,
         asked: (p) => _askedSince(p) ?? now);
+    // Known projects, then other folders where something runs, the home folder last; the activity order is kept inside each.
+    final ordered = [for (final g in [0, 1, 2]) ...projects.where((p) => projectGroup(p) == g)];
     return [
       if (many || HostUsageBar.labelsFor(host).isNotEmpty)
         Padding(
@@ -406,7 +409,7 @@ class _RigsHomeState extends State<RigsHome> {
           ]),
         ),
       if (!folded)
-        for (final p in projects) ..._project(context, host, p),
+        for (final p in ordered) ..._project(context, host, p),
     ];
   }
 

@@ -46,26 +46,36 @@ void main() {
 
   setUp(() => animateStatusSpinners = false);
 
-  testWidgets('phone: New, Message all, Room and Reminders are four tiles under the header line; Room and Reminders open their screens',
+  testWidgets('phone: no Mac buttons and no tiles; the ⋯ sheet has New, Message all, Room, Reminders and Rig details above the rig\'s options; Room and Reminders open their screens',
       (tester) async {
     await _open(tester, const Size(390, 900));
     expect(find.widgetWithText(FilledButton, 'New'), findsNothing, reason: 'no Mac buttons on a phone');
-    final tiles = [for (final a in ['New', 'Message all', 'Room', 'Reminders']) tester.getRect(find.bySemanticsLabel(a))];
-    expect({for (final r in tiles) r.top}.length, 1, reason: 'one row');
-    expect(tiles.every((r) => r.height >= 44), isTrue, reason: 'finger-sized tiles');
-    final icon = find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.rig);
-    expect(icon, findsOneWidget, reason: 'the rig icon leads the title');
-    expect(tester.widget<AppIcon>(icon).color, Tokens.light.accent, reason: 'conveyor has seats that need you: the worst state\'s colour');
-    expect(find.descendant(of: find.byType(PageHeader), matching: find.byType(StatusIcon)), findsNothing, reason: 'no state ring on it');
-
-    await tester.tap(find.bySemanticsLabel('Room'));
+    expect(find.bySemanticsLabel('Room'), findsNothing, reason: 'no tiles under the header either');
+    await tester.tap(find.byTooltip('Rig options'));
+    await tester.pumpAndSettle();
+    final y = {for (final t in ['New', 'Message all', 'Room', 'Reminders', 'Rename label']) t: tester.getTopLeft(find.text(t).last).dy};
+    expect(y['New']! < y['Message all']! && y['Message all']! < y['Room']! && y['Room']! < y['Reminders']! && y['Reminders']! < y['Rename label']!, isTrue,
+        reason: 'the rig actions first, then the rig\'s options');
+    expect(find.text('Rig details'), findsNothing, reason: 'this is the rig page');
+    await tester.tap(find.text('Room').last);
     await tester.pumpAndSettle();
     expect(find.byType(RigRoomScreen), findsOneWidget);
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.bySemanticsLabel('Reminders'));
+    await tester.tap(find.byTooltip('Rig options'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Reminders').last);
     await tester.pumpAndSettle();
     expect(find.byType(RemindersScreen), findsOneWidget);
+    await _close(tester);
+  });
+
+  testWidgets('the phone rig page header: the rig icon in its worst state\'s colour', (tester) async {
+    await _open(tester, const Size(390, 900));
+    final icon = find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.rig);
+    expect(icon, findsOneWidget, reason: 'the rig icon leads the title');
+    expect(tester.widget<AppIcon>(icon).color, Tokens.light.accent, reason: 'conveyor has seats that need you: the worst state\'s colour');
+    expect(find.descendant(of: find.byType(PageHeader), matching: find.byType(StatusIcon)), findsNothing, reason: 'no state ring on it');
     await _close(tester);
   });
 
@@ -148,13 +158,34 @@ void main() {
       expect(on(from), findsNothing, reason: 'replaced, not stacked');
     }
 
+    // The same fixed row on every rig view: the same six controls, in this order, the same widths.
+    List<double> row() {
+      final xs = <double>[];
+      final widths = <double>[];
+      for (final label in ['New', 'Message all', 'Room', 'Reminders', 'Rig details']) {
+        final f = find.widgetWithText(OutlinedButton, label).evaluate().isNotEmpty
+            ? find.widgetWithText(OutlinedButton, label)
+            : find.widgetWithText(FilledButton, label);
+        expect(f, findsOneWidget, reason: label);
+        xs.add(tester.getTopLeft(f).dx);
+        widths.add(tester.getSize(f).width);
+      }
+      expect(find.byTooltip('Rig options'), findsOneWidget);
+      xs.add(tester.getTopLeft(find.byTooltip('Rig options')).dx);
+      expect([...xs]..sort(), xs, reason: 'left to right in that order');
+      return widths;
+    }
+
+    final onPage = row();
     await go(RigScreen, 'Tiles', TilesScreen);
+    expect(row(), onPage, reason: 'the tiles have the same row');
     await go(TilesScreen, 'Rig details', RigScreen);
     // The rig's chat (an agent opened from it takes its place here).
     final lead = seatFromFixture('r-conveyor', 'lead');
     Navigator.of(tester.element(find.byType(RigScreen))).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => ChatScreen(rigName: 'conveyor', seat: lead, asChat: true)));
     await settle();
+    expect(row(), onPage, reason: 'the chat has the same row');
     await go(RigChatPager, 'Rig details', RigScreen);
     expect(depth.routes, before, reason: 'the switches added no route: one Back leaves the rig');
     await _close(tester);

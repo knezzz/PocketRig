@@ -20,7 +20,7 @@ import 'agent_panels.dart' show AgentMediaCounts, AgentPanelsToggle, PanelPrevie
 import 'common.dart' show toast;
 import 'chat_screen.dart' show seatScreen;
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
-import 'rig/rig_header.dart' show RigDetailsButton;
+import 'rig/rig_bar.dart' show rigBarActions;
 import 'rig_screen.dart' show RigScreen;
 import 'kit.dart' show PageHeader;
 import 'progress_bar.dart' show ContextBar;
@@ -170,8 +170,13 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
           actions: [
             // The enlarged tile is the agent's full terminal: it gets the panel dock too.
             if (enlarged >= 0) const AgentPanelsToggle(),
-            // The rig's page takes this screen's place.
-            RigDetailsButton(rig: widget.rig, projectName: widget.projectName),
+            // The rig's fixed row, as on its page: Rig details opens the page in this screen's place.
+            ...rigBarActions(context,
+                rig: widget.rig,
+                seats: _seats,
+                projectName: widget.projectName,
+                wide: true,
+                onDeleted: () => Navigator.of(context).maybePop()),
           ],
         ),
         Expanded(

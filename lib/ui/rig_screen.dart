@@ -18,13 +18,12 @@ import 'chat_screen.dart';
 import 'common.dart';
 import 'host_color.dart' show hostOverline;
 import 'kit.dart';
-import 'new_session_sheet.dart' show startAgentInFolder;
 import 'project_tally.dart' show rigIconColor;
 import 'rig/overview_tab.dart';
 import 'rig/progress_tab.dart' show ProgressBody, RigDangerZone;
 import 'rig/rig_actions.dart';
+import 'rig/rig_bar.dart' show rigBarActions;
 import 'rig/rig_header.dart';
-import 'rig/rig_room.dart' show RigRoomScreen, RemindersScreen, broadcastToRig;
 import 'rig/work_queue_screen.dart' show isOpenQueueState;
 import 'rig/seat_sheet.dart';
 import 'spec_editor_screen.dart';
@@ -278,12 +277,6 @@ class _RigScreenState extends State<RigScreen> with Polling {
     final withSeats = RigWithSeats(_rig, _seats);
     final cwd = withSeats.primaryCwd;
     final stopped = _rig.status == 'stopped';
-    final actions = RigActionSet(
-      onNew: cwd == null ? null : () => startAgentInFolder(context, cwd),
-      onMessageAll: stopped ? null : () => broadcastToRig(context, _rig),
-      onRoom: () => _push(RigRoomScreen(rig: _rig)),
-      onReminders: () => _push(RemindersScreen(rig: _rig, seats: _seats)),
-    );
     final k = Tokens.of(context);
     final agents = _seats.where((s) => s.isAgent).length;
     final open = _queue.where((q) => isOpenQueueState(q.state)).length;
@@ -293,22 +286,13 @@ class _RigScreenState extends State<RigScreen> with Polling {
       // The rig, in the colour of its worst state.
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, withSeats, host)),
       title: host?.rigLabel(_rig.name) ?? _rig.name,
-      actions: [
-        if (wide) ...rigHeaderButtons(context, actions),
-        // The Mac only: every running agent of the rig as a live terminal.
-        if (isDesktop && !stopped)
-          ...[
-            RigTilesButton(rig: RigWithSeats(_rig, _seats), projectName: widget.projectName),
-            RigDetailsButton(rig: _rig, projectName: widget.projectName, selected: true),
-          ],
-        IconButton(
-          tooltip: 'Rig options',
-          icon: const Icon(Icons.more_horiz),
-          onPressed: () => showRigActions(context, _rig, _seats,
-              projectName: widget.projectName,
-              onDeleted: () => _leaveRig(context, _rig.id)),
-        ),
-      ],
+      actions: rigBarActions(context,
+          rig: _rig,
+          seats: _seats,
+          projectName: widget.projectName,
+          wide: wide,
+          onRigPage: true,
+          onDeleted: () => _leaveRig(context, _rig.id)),
       // Under the title row, across the whole width: project · host · worktree · N agents (the real name too when this app
       // renamed the rig); then, on a phone, the four actions as tiles; then the tabs. The Mac has the actions in the bar.
       bottom: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -322,14 +306,19 @@ class _RigScreenState extends State<RigScreen> with Polling {
             if (_rig.status != 'running') RigStatusLine(_rig),
           ]),
         ),
-        if (!wide) ...[RigActionTiles(actions), const SizedBox(height: 12)],
-        TabStrip<_RigTab>(
-          values: tabs,
-          labels: [for (final t in tabs) t == _RigTab.work && open > 0 ? 'Work $open' : t.label],
-          selected: tab,
-          onChanged: (t) => setState(() => _tab = t),
-          semanticLabel: 'Rig views',
-        ),
+        Row(children: [
+          Expanded(
+            child: TabStrip<_RigTab>(
+              values: tabs,
+              labels: [for (final t in tabs) t == _RigTab.work && open > 0 ? 'Work $open' : t.label],
+              selected: tab,
+              onChanged: (t) => setState(() => _tab = t),
+              semanticLabel: 'Rig views',
+            ),
+          ),
+          // The Mac only: every running agent of the rig as a live terminal.
+          if (isDesktop && !stopped) RigTilesButton(rig: withSeats, projectName: widget.projectName),
+        ]),
       ]),
     );
     return Scaffold(

@@ -10,7 +10,7 @@ import '../chat_screen.dart';
 import '../agent_view_switch.dart';
 import '../needs_you_banner.dart';
 import '../project_actions.dart' show projectNameOf;
-import '../rig/rig_header.dart' show RigDetailsButton;
+import '../rig/rig_bar.dart' show RigBar;
 import '../terminal_screen.dart';
 import '../theme.dart';
 import 'chat_header.dart';
@@ -135,6 +135,8 @@ class _RigChatPagerState extends State<RigChatPager> {
     final r = host == null ? null : fleet.feedFor(host).rigs.where((r) => r.rig.id == widget.seat.rigId).firstOrNull;
     return Scaffold(
       body: Column(children: [
+        // The Mac: the rig's own fixed row above the agent's header.
+        if (isDesktop && r != null) RigBar(rig: r.rig, seats: r.seats, projectName: projectNameOf(r.primaryCwd ?? r.rig.name)),
         chatAgentHeader(
           context,
           seat: _pages.where((s) => s.logicalId == _selected).firstOrNull,
@@ -144,9 +146,6 @@ class _RigChatPagerState extends State<RigChatPager> {
           onSwitch: () => _toTerminal(_pages.firstWhere((s) => s.logicalId == _selected)),
           git: git,
           onGit: (g) => showGitSheet(context, g),
-          extraActions: [
-            if (isDesktop && r != null) RigDetailsButton(rig: r.rig, projectName: projectNameOf(r.primaryCwd ?? r.rig.name)),
-          ],
           tabs: _tabs.length > 1 ? SeatSwitcher(seats: _tabs, selected: _selected, onTap: _tapTab) : null,
         ),
         Expanded(

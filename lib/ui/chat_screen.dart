@@ -77,7 +77,13 @@ int chatFreshCap = 4 << 20;
 
 /// Board 3a: a Claude Code seat as a chat, read live from its session log
 /// over SSH. Messages go out through the daemon, like `rig send`.
-/// A seat's own screen: the chat for a Claude Code seat (its terminal on desktop), the terminal otherwise.
+/// Whether a plain 'open' of [seat] shows its chat: Settings › App › Open agents on is Chat, and the seat has one (a
+/// Claude Code seat that is not a subagent's log). The sidebar, the tiles, the rig screen and the Inbox ask this.
+bool opensAsChat(Seat seat) =>
+    openAgentsOn.value == AgentView.chat && seat.isClaude && !isSubagentLog(seat.transcriptPath);
+
+/// A seat's own screen as 'Open agents on' says: its chat or its terminal. A seat with no chat (Codex, a shell) is
+/// its terminal either way.
 Widget seatScreen(String rigName, Seat seat) =>
     seat.isClaude ? ChatScreen(rigName: rigName, seat: seat) : TerminalScreen(target: SeatTarget(rigName, seat));
 

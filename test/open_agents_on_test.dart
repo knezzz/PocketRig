@@ -2,10 +2,12 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pocket_rig/data/loose_agents.dart';
 import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/ui/agent_view_switch.dart';
 import 'package:pocket_rig/ui/chat/rig_chat_pager.dart' show RigChatPager;
 import 'package:pocket_rig/ui/chat_screen.dart';
+import 'package:pocket_rig/ui/loose_agent_screen.dart';
 import 'package:pocket_rig/ui/open_agents_on.dart';
 import 'package:pocket_rig/ui/terminal_screen.dart';
 
@@ -55,6 +57,47 @@ void main() {
       expect(find.byType(TerminalScreen), findsNothing, reason: '$v: no session');
       await _end(tester);
     }
+  });
+
+  testWidgets('opensAsChat: the setting is Chat and the seat has a chat', (tester) async {
+    final codex = Seat(rigId: 'r', logicalId: 'c', sessionName: 'c@r', runtime: 'codex');
+    expect(opensAsChat(lead), isFalse, reason: 'Terminal is the default');
+    openAgentsOn.value = AgentView.chat;
+    expect(opensAsChat(lead), isTrue);
+    expect(opensAsChat(codex), isFalse, reason: 'a Codex seat has no chat');
+  });
+
+  testWidgets('an agent outside a rig opens as the setting says; an explicit Chat is the chat whatever it is', (tester) async {
+    final store = await installFakes();
+    Future<void> open({required bool claude, bool chat = false}) async {
+      final a = LooseAgent(id: 'x', tmuxSession: 'x', runtime: claude ? 'claude-code' : 'codex', claudeSessionId: claude ? 's' : null);
+      await tester.pumpWidget(MaterialApp(
+          home: phone(store, Builder(builder: (c) => TextButton(onPressed: () => openLooseAgent(Navigator.of(c), a, const [], chat: chat), child: const Text('go'))), root: true)));
+      await tester.tap(find.text('go'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    await open(claude: true);
+    expect(find.byType(TerminalScreen), findsOneWidget, reason: 'Terminal: a Claude agent in tmux opens its terminal');
+    await _end(tester);
+    await open(claude: false);
+    expect(find.byType(TerminalScreen), findsOneWidget, reason: 'Terminal: so does a Codex agent in tmux (it had only its details)');
+    await _end(tester);
+
+    openAgentsOn.value = AgentView.chat;
+    await open(claude: true);
+    expect(find.byType(TerminalScreen), findsNothing, reason: 'Chat: its chat');
+    await _end(tester);
+    await open(claude: false);
+    expect(find.byType(LooseAgentScreen), findsOneWidget, reason: 'Chat: Codex has no chat, so its details');
+    await _end(tester);
+
+    openAgentsOn.value = AgentView.terminal;
+    await open(claude: true, chat: true);
+    expect(find.byType(TerminalScreen), findsNothing, reason: "an explicit 'Chat' is the chat, even when the setting is Terminal");
+    await _end(tester);
   });
 
   test('the choice is kept in a file and read back; anything else reads as Terminal', () async {

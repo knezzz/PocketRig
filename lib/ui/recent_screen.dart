@@ -163,19 +163,19 @@ class _RecentScreenState extends State<RecentScreen> {
     useHost(context, host);
     detailNavigator(context).push(MaterialPageRoute(
       builder: (_) => chat && seat.isClaude
-          ? ChatScreen(rigName: rigName, seat: seat)
+          ? ChatScreen(rigName: rigName, seat: seat, asChat: true)
           : TerminalScreen(target: SeatTarget(rigName, seat)),
     ));
   }
 
-  void _openLoose(HostFeed f, LooseAgent a, {bool terminal = false}) {
+  void _openLoose(HostFeed f, LooseAgent a, {bool terminal = false, bool chat = false}) {
     useHost(context, f.host);
     final nav = detailNavigator(context);
     if (terminal) {
       nav.push(MaterialPageRoute(
           builder: (_) => TerminalScreen(target: SeatTarget('no rig', a.toSeat()))));
     } else {
-      openLooseAgent(nav, a, f.rigs);
+      openLooseAgent(nav, a, f.rigs, chat: chat);
     }
   }
 
@@ -421,7 +421,7 @@ class _RecentScreenState extends State<RecentScreen> {
       lastSaid: _lastSaid(f, s),
       branch: f.prs[a.cwd]?.headRef,
       onTerminal: a.inTmux ? () => _openLoose(f, a, terminal: true) : null,
-      onChat: () => _openLoose(f, a),
+      onChat: () => _openLoose(f, a, chat: true),
       onAnswered: () => setState(() => _answered[key] = (DateTime.now(), askSig(s))),
       expanded: expanded,
       selected: selected,

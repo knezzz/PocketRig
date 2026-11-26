@@ -20,7 +20,7 @@ import 'hosts_screen.dart' show HostsScreen;
 import 'common.dart' show useHost;
 import 'project_actions.dart' show openShell, showProjectActions, showShellActions;
 import 'project_screen.dart';
-import 'chat_screen.dart' show seatScreen;
+import 'chat_screen.dart' show opensAsChat, seatScreen;
 import '../data/projects.dart' show groupByWorktree;
 import 'kit.dart' show HoverBuilder, NavRow, ShellMenu, panelRouteName, navFillInset, navMouse, navSideInset, navSlotW, navIconGap, navTrailW, navRowTop, navNameLineH, navSecondLineH;
 import 'loose_agent_screen.dart' show openLooseAgent, showLooseActions;
@@ -963,8 +963,9 @@ class _ProjectGroup extends StatelessWidget {
         depth: depth,
         keySuffix: suffix,
         onTiles: () => onRig(r),
-        // An agent with a tile opens enlarged in the tiles, as a double click there does; a shell its screen.
-        onSeat: (s) => TilesScreen.tiled(s)
+        // An agent with a tile opens enlarged in the tiles, as a double click there does, unless the setting is Chat
+        // (then its chat); a shell its screen.
+        onSeat: (s) => TilesScreen.tiled(s) && !opensAsChat(s)
             ? onRig(r, enlarge: s.logicalId)
             : detailNavigator(context).push(MaterialPageRoute<void>(builder: (_) => seatScreen(r.rig.name, s))));
     final rows = <Widget>[
@@ -1031,7 +1032,7 @@ List<Widget> _looseRows(BuildContext context, Host host, LooseAgent a, List<RigW
         onMore: () {
           useHost(context, host);
           showLooseActions(context, a,
-              onChat: () => openLooseAgent(detailNavigator(context), a, rigs),
+              onChat: () => openLooseAgent(detailNavigator(context), a, rigs, chat: true),
               onTerminal: () => detailNavigator(context).push(
                   MaterialPageRoute<void>(builder: (_) => TerminalScreen(target: SeatTarget('no rig', a.toSeat())))));
         },

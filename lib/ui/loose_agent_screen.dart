@@ -18,7 +18,9 @@ import 'project_tally.dart' show looseState;
 import 'status_shape.dart';
 import 'desktop_shell.dart';
 import 'detail_row.dart';
+import 'agent_view_switch.dart' show AgentView;
 import 'kit.dart';
+import 'open_agents_on.dart';
 import 'rig_screen.dart';
 import 'terminal_screen.dart';
 import 'theme.dart';
@@ -124,13 +126,17 @@ class _LooseRow extends StatelessWidget {
   }
 }
 
-/// Opens an agent outside a rig: Claude Code agents go straight to their
-/// chat (whose menu has the details screen), others to the details screen.
-void openLooseAgent(NavigatorState nav, LooseAgent a, List<RigWithSeats> rigs) {
+/// Opens an agent outside a rig as 'Open agents on' says (a Claude Code agent: its chat or terminal). One with no
+/// chat opens its terminal when that is the setting and it runs in tmux, else its details screen. [chat] is the
+/// explicit 'Chat' of a menu or link: the chat, whatever the setting.
+void openLooseAgent(NavigatorState nav, LooseAgent a, List<RigWithSeats> rigs, {bool chat = false}) {
+  final seat = a.toSeat();
   nav.push(MaterialPageRoute(
-    builder: (_) => a.toSeat().isClaude
-        ? ChatScreen(rigName: 'no rig', seat: a.toSeat(), loose: a, rigs: rigs)
-        : LooseAgentScreen(agent: a, rigs: rigs),
+    builder: (_) => seat.isClaude
+        ? ChatScreen(rigName: 'no rig', seat: seat, loose: a, rigs: rigs, asChat: chat)
+        : a.inTmux && !chat && openAgentsOn.value == AgentView.terminal
+            ? TerminalScreen(target: SeatTarget('no rig', seat))
+            : LooseAgentScreen(agent: a, rigs: rigs),
   ));
 }
 

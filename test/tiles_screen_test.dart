@@ -14,6 +14,7 @@ import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/terminal/transport.dart';
 import 'package:pocket_rig/ui/agent_panels.dart' show AgentPanelDock, AgentPanelsToggle, PanelPreviewHost;
 import 'package:pocket_rig/ui/agent_panels_sheet.dart' show PanelsStrip;
+import 'package:pocket_rig/ui/chat/seat_switcher.dart' show SeatSwitcher;
 import 'package:pocket_rig/ui/desktop_menu.dart' show trackMenuAnchor;
 import 'package:pocket_rig/ui/status_shape.dart';
 import 'package:pocket_rig/ui/theme.dart' show Tokens, animateStatusSpinners;
@@ -274,6 +275,34 @@ void main() {
     await open(390);
     expect(find.byType(AgentPanelDock), findsNothing, reason: 'no dock on a phone');
     expect(find.byType(PanelsStrip), findsWidgets, reason: 'the panels strip, which opens the sheet');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('in a rig\'s chat the tab of an agent with no chat (a Codex one) opens its enlarged tile in the rig\'s host, with the rig row, not a bare terminal screen',
+      (tester) async {
+    final store = await installFakes();
+    isDesktop = true;
+    addTearDown(() => isDesktop = false);
+    debugOpenTerminal = (h, t) async => FakeTerminal('view');
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(
+        home: phone(store, ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true), width: 1400, height: 900)));
+    for (var i = 0; i < 12 && find.descendant(of: find.byType(SeatSwitcher), matching: find.text('impl')).evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    final tab = find.descendant(of: find.byType(SeatSwitcher), matching: find.text('impl'));
+    expect(tab, findsOneWidget, reason: 'the rig\'s agents are tabs');
+    await tester.tap(tab);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(TerminalScreen), findsNothing, reason: 'no bare terminal screen');
+    expect(find.byType(RigHost), findsOneWidget, reason: 'the rig\'s host');
+    expect(find.byTooltip('Rig options'), findsOneWidget, reason: 'with the rig row');
+    expect(find.byType(AgentHeader), findsOneWidget, reason: 'and impl\'s agent row: its tile is enlarged');
+    expect(find.descendant(of: find.byType(AgentHeader), matching: find.text('impl')), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });

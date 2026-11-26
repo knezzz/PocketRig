@@ -77,10 +77,18 @@ List<Widget> rigBarActions(
   ];
 }
 
+/// The rig's title, the same in every view: 'app / conveyor', and ' · host' when there is more than one host.
+String rigTitle(BuildContext context, Rig rig, String projectName) {
+  final store = AppScope.of(context);
+  final host = store.active;
+  final host1 = store.hosts.length > 1 && host != null ? ' · ${host.name}' : '';
+  return '$projectName / ${host?.rigLabel(rig.name) ?? rig.name}$host1';
+}
+
 /// The rig's header above an agent's chat on the Mac: the page's own header (the same PageHeader, so the same height, the same x
 /// and y for every button, the ⋯ at the right edge), without a Back (the agent's header under it has it).
 class RigBar extends StatelessWidget {
-  const RigBar({super.key, required this.rig, required this.seats, required this.projectName, this.showBack = false, this.qualified = false});
+  const RigBar({super.key, required this.rig, required this.seats, required this.projectName, this.showBack = false});
   final Rig rig;
   final List<Seat> seats;
   final String projectName;
@@ -88,20 +96,13 @@ class RigBar extends StatelessWidget {
   /// The tiles screen has no agent header under it: the Back is this one's.
   final bool showBack;
 
-  /// The tiles name the project and, with more than one host, the host too (as they did): 'app / conveyor'.
-  final bool qualified;
-
   @override
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
     final host = AppScope.of(context).active;
     return PageHeader(
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, RigWithSeats(rig, seats), host)),
-      // One line in every view (no host overline: it made the tiles' row taller than the page's and the chat's): the host, when
-      // there is more than one, ends the title.
-      title: qualified
-          ? '$projectName / ${host?.rigLabel(rig.name) ?? rig.name}${AppScope.of(context).hosts.length > 1 && host != null ? ' · ${host.name}' : ''}'
-          : (host?.rigLabel(rig.name) ?? rig.name),
+      title: rigTitle(context, rig, projectName),
       showBack: showBack,
       actions: rigBarActions(context,
           rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),

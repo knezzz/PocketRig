@@ -13,7 +13,8 @@ import '../needs_you_banner.dart';
 import '../project_actions.dart' show projectNameOf;
 import '../rig/rig_bar.dart' show RigBar;
 import '../terminal_screen.dart';
-import '../tiles_screen.dart' show terminalInTile;
+import '../rig/rig_host.dart' show RigMode, rigRoute;
+import '../tiles_screen.dart' show TilesScreen, terminalInTile;
 import '../theme.dart';
 import 'chat_header.dart';
 import 'seat_switcher.dart';
@@ -118,9 +119,25 @@ class _RigChatPagerState extends State<RigChatPager> {
     );
   }
 
+  /// The rig this chat belongs to, with its seats, from the host's feed.
+  RigWithSeats? _rigWithSeats(BuildContext context) {
+    final host = AppScope.of(context).active;
+    return host == null ? null : fleet.feedFor(host).rigs.where((r) => r.rig.id == widget.seat.rigId).firstOrNull;
+  }
+
   void _tapTab(Seat s) {
     if (s.logicalId == _selected) return;
     if (!s.isClaude && s.logicalId != widget.seat.logicalId) {
+      // A non-Claude agent has no chat: on the Mac its terminal is its tile in the rig's host, enlarged, with the rig's row; a
+      // host that is alive is gone back to, else this chat gives way to a new one.
+      if (terminalInTile(context, s)) return;
+      final rig = _rigWithSeats(context);
+      if (isDesktop && rig != null && rig.rig.status != 'stopped' && TilesScreen.tiled(s)) {
+        Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (_) => rigRoute(rig.rig, projectNameOf(rig.primaryCwd ?? rig.rig.name),
+                seats: rig.seats, mode: RigMode.tiles, enlarge: s.logicalId)));
+        return;
+      }
       Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => TerminalScreen(target: SeatTarget(widget.rigName, s))));
       return;
@@ -137,8 +154,7 @@ class _RigChatPagerState extends State<RigChatPager> {
     final info = _header.value?.seatId == _selected ? _header.value : null;
     final git = info?.git;
     // The Mac: this rig's page one click away (a stopped rig has only the page).
-    final host = AppScope.of(context).active;
-    final r = host == null ? null : fleet.feedFor(host).rigs.where((r) => r.rig.id == widget.seat.rigId).firstOrNull;
+    final r = _rigWithSeats(context);
     return Scaffold(
       body: Column(children: [
         // The Mac: the rig's own fixed row above the agent's header.

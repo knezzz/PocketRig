@@ -24,7 +24,7 @@ import 'project_tally.dart' show rigIconColor;
 import 'rig/overview_tab.dart';
 import 'rig/progress_tab.dart' show ProgressBody, RigDangerZone;
 import 'rig/rig_actions.dart';
-import 'rig/rig_bar.dart' show rigBarActions;
+import 'rig/rig_bar.dart' show rigBarActions, rigTitle;
 import 'tiles_screen.dart' show TilesScreen, tilesEnlarge;
 import 'open_agents_on.dart' show openAgentsOn;
 import 'agent_view_switch.dart' show AgentView;
@@ -304,7 +304,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
     final header = PageHeader(
       // The rig, in the colour of its worst state.
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, withSeats, host)),
-      title: host?.rigLabel(_rig.name) ?? _rig.name,
+      title: rigTitle(context, _rig, widget.projectName),
       actions: rigBarActions(context,
           rig: _rig,
           seats: _seats,

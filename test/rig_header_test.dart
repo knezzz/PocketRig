@@ -87,7 +87,7 @@ void main() {
       expect(find.widgetWithText(OutlinedButton, a).evaluate().length + find.widgetWithText(FilledButton, a).evaluate().length, 1, reason: a);
     }
     expect(find.widgetWithText(FilledButton, 'New'), findsOneWidget, reason: 'New is the filled one');
-    final title = tester.getTopLeft(find.text('conveyor')).dy;
+    final title = tester.getTopLeft(find.textContaining('app / ')).dy;
     expect(tester.getTopLeft(find.widgetWithText(FilledButton, 'New')).dy, lessThan(title + 40), reason: 'in the bar, level with the title');
     // The line under the title runs across the page: it is its own row, not squeezed beside the buttons.
     expect(tester.getTopLeft(find.text('4 agents')).dy, greaterThan(title + 20), reason: 'a row under the title');
@@ -157,13 +157,14 @@ void main() {
       return rects;
     }
 
-    // The rig's title and its icon: the same left, top and height in every view (the title's width is its text's).
-    List<double> title() {
+    // The rig's title (its text too) and its icon: the same left, top and height in every view.
+    List<Object> title() {
       final head = find.byType(PageHeader).first;
       final text = find.descendant(of: head, matching: find.textContaining('conveyor')).first;
       final icon = find.descendant(of: head, matching: find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.rig));
       final t = tester.getRect(text), i = tester.getRect(icon);
-      return [i.left, i.top, i.height, t.left, t.top, t.height];
+      final words = (tester.widget(text) as Text).data;
+      return [words ?? '', i.left, i.top, i.height, t.left, t.top, t.height];
     }
 
     final onPage = row();

@@ -214,7 +214,7 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
       backgroundColor: k.termBg,
       body: Column(children: [
         // The rig's fixed row, the one the page and the chat have; Rig details opens the page in this screen's place.
-        RigBar(rig: widget.rig, seats: _seats, projectName: widget.projectName, showBack: true, qualified: true),
+        RigBar(rig: widget.rig, seats: _seats, projectName: widget.projectName, showBack: true),
         // An enlarged tile is the agent's full terminal: its row (name at the left; Chat | Terminal, the panels toggle and ⋯ at the
         // right) under the rig's, with the dock beside the terminal.
         if (enlarged >= 0) _agentRow(context, _seats[enlarged]),

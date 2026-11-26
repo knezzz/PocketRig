@@ -210,7 +210,7 @@ void main() {
     expect((chat as ChatScreen).seat.logicalId, lead.logicalId);
   });
 
-  testWidgets('desktop: a right click on a tile opens that seat\'s sheet', (tester) async {
+  testWidgets('desktop: a right click on a tile does nothing; its ⋯ opens the agent list, the one the header has', (tester) async {
     final store = await installFakes();
     isDesktop = true;
     addTearDown(() => isDesktop = false);
@@ -226,7 +226,15 @@ void main() {
         kind: PointerDeviceKind.mouse, buttons: kSecondaryMouseButton);
     await mouse.up();
     await tester.pumpAndSettle();
-    expect(find.widgetWithText(OutlinedButton, 'Terminal'), findsOneWidget);
+    expect(find.byType(MenuItemButton), findsNothing, reason: 'no menu');
+    expect(find.byType(BottomSheet), findsNothing, reason: 'no sheet');
+
+    expect(find.byTooltip(RegExp('Actions for ')), findsWidgets, reason: 'a ⋯ on each tile');
+    await tester.tap(find.byTooltip(RegExp('Actions for ')).first);
+    await tester.pumpAndSettle();
+    expect(find.widgetWithText(MenuItemButton, 'Open as terminal'), findsOneWidget);
+    expect(find.widgetWithText(MenuItemButton, 'Agent details'), findsOneWidget);
+    expect(find.widgetWithText(MenuItemButton, 'Reconnect'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });

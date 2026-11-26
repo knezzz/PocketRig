@@ -15,6 +15,8 @@ import '../terminal/terminal_link.dart';
 import '../terminal/tmux_scroll.dart';
 import '../terminal/links.dart';
 import '../terminal/transport.dart';
+import 'action_rows.dart' show showActionRows;
+import 'rig/seat_actions.dart' show seatMenuRows;
 import 'rig/seat_sheet.dart' show showSeatSheet;
 import 'agent_panels.dart' show AgentMediaCounts, AgentPanelsToggle, PanelPreviewHost;
 import 'common.dart' show toast;
@@ -158,7 +160,6 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
           visible: big || enlarged < 0,
           onFocus: () => setState(() => _focused = s.logicalId),
           onToggle: () => _toggle(s),
-          onMore: () => showSeatSheet(context, widget.rig.name, s, onTerminal: () => _toggle(s)),
         );
     return Scaffold(
       backgroundColor: k.termBg,
@@ -245,8 +246,7 @@ class _Tile extends StatefulWidget {
       required this.focused,
       required this.visible,
       required this.onFocus,
-      required this.onToggle,
-      required this.onMore});
+      required this.onToggle});
   final String rigName;
   final Seat seat;
   final bool big;
@@ -256,9 +256,6 @@ class _Tile extends StatefulWidget {
   final bool visible;
   final VoidCallback onFocus;
   final VoidCallback onToggle;
-
-  /// The seat's shared action sheet: a long press on the phone, a right click on desktop.
-  final VoidCallback onMore;
   @override
   State<_Tile> createState() => _TileState();
 }
@@ -324,15 +321,32 @@ class _TileState extends State<_Tile> {
     }
   }
 
+  /// The agent's ⋯ list, the one its header has: Open as chat / terminal (the tile enlarges), Agent details, Reconnect...
+  void _menu() {
+    final seat = widget.seat;
+    final reconnect = (Icons.refresh_outlined, 'Reconnect', null, _reconnect);
+    showActionRows(
+        context,
+        seat.logicalId,
+        seatMenuRows(context, widget.rigName, seat,
+            onTerminal: widget.onToggle,
+            extra: [reconnect],
+            onDetails: () => showSeatSheet(context, widget.rigName, seat,
+                onTerminal: widget.onToggle, extraActions: [(reconnect.$1, reconnect.$2, _reconnect)])));
+  }
+
+  Future<void> _reconnect() async {
+    await _link?.close();
+    _link = null;
+    if (mounted) setState(() => _transport = null);
+    await _connect();
+  }
+
   /// A second press within 300 ms is a double click; a Listener sees it without taking the terminal's own taps. A
-  /// right click opens the seat's sheet instead: the terminal view keeps
-  /// that for itself, so a gesture detector around it would never win.
+  /// right click does nothing (the ⋯ is the menu, and the terminal does not send it to tmux either).
   void _down(PointerDownEvent e) {
+    if (e.kind == PointerDeviceKind.mouse && e.buttons == kSecondaryMouseButton) return;
     widget.onFocus();
-    if (e.kind == PointerDeviceKind.mouse && e.buttons == kSecondaryMouseButton) {
-      widget.onMore();
-      return;
-    }
     _focus.requestFocus();
     // The pointer's own timestamp, not the wall clock: a loaded machine can't stretch two quick presses apart.
     final now = e.timeStamp;
@@ -387,6 +401,15 @@ class _TileState extends State<_Tile> {
                 AgentMediaCounts(seat: widget.seat),
                 // Context in use, after the counts. Unknown: nothing (no 0%, no empty bar).
                 if (widget.seat.contextUsedPercent case final ctx?) _TileContext(ctx, bar: box.maxWidth >= 260),
+                // The agent's actions, the list its header's ⋯ opens: the way in (a right click does nothing).
+                IconButton(
+                  tooltip: 'Actions for ${widget.seat.logicalId}',
+                  onPressed: _menu,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints.tightFor(width: 24, height: 24),
+                  style: IconButton.styleFrom(minimumSize: const Size(24, 24), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  icon: Icon(Icons.more_horiz, size: 16, color: k.muted),
+                ),
               ]),
             )),
             Expanded(

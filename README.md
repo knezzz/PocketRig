@@ -4,6 +4,17 @@
 
 A small phone app for [OpenRig](https://github.com/mvschwarz/openrig): your rigs grouped by project folder, what's waiting on you, a terminal into any seat, and a one-tap shell in any project folder. It connects over Tailscale, with SSH as the fallback.
 
+## Screenshots
+
+Rendered from the golden tests with fake data (dark on the right of each pair).
+
+| | |
+|---|---|
+| ![Inbox](docs/screenshots/4_inbox.png) | ![Seat chat](docs/screenshots/3a_seat_chat.png) |
+| ![Seat terminal](docs/screenshots/3b_seat_terminal.png) | ![Rig work](docs/screenshots/2a_rig_overview.png) |
+
+![Wide layout](docs/screenshots/1c_rigs_home_wide.png)
+
 ## First run
 
 ```sh
@@ -17,7 +28,7 @@ The `ios/` and `android/` folders are committed, so no `flutter create` is neede
 
 ## Building
 
-The Xcode projects (`ios/`, `macos/`) are signed with the author's team `GS273DWK53`. Set your own `DEVELOPMENT_TEAM` in Xcode (Runner target, Signing & Capabilities), and change the bundle ids if you ship your own build.
+The Xcode projects (`ios/`, `macos/`) are signed with the author's team. Set your own `DEVELOPMENT_TEAM` in Xcode (Runner target, Signing & Capabilities), and change the bundle ids if you ship your own build.
 
 **OpenRig version:** the daemon API used here was checked against **OpenRig 0.7.6** (`@openrig/cli`). The API is internal and changes between releases, so if `rig --version` on your host is newer and something breaks, the fix belongs in `lib/api/openrig_client.dart`.
 
@@ -28,7 +39,7 @@ The Xcode projects (`ios/`, `macos/`) are signed with the author's team `GS273DW
 
 ## Design
 
-The screens follow the "PocketRig redesign" canvas: a grey wireframe in which only state is colored, with dark as the primary theme (Settings → Appearance switches to Light or System).
+The screens are grey, with only state colored, and dark is the primary theme (Settings → Appearance switches to Light or System).
 
 - **Tabs:** Inbox (home: everything waiting on you, answerable in place) · Projects · Settings.
 - **Status shapes** (`lib/ui/status_shape.dart`), the same everywhere:
@@ -51,7 +62,7 @@ The screens follow the "PocketRig redesign" canvas: a grey wireframe in which on
 
 ## Golden tests
 
-`test/golden/boards_golden_test.dart` renders every wireframe board's screen with [Alchemist](https://pub.dev/packages/alchemist), in light and dark, on a 390×844 phone. The screens are the real widgets. `test/golden/fixtures.dart` swaps the daemon client, SSH, the session-log tail and the terminal for a fake host seeded with the boards' sample data.
+`test/golden/boards_golden_test.dart` renders each screen with [Alchemist](https://pub.dev/packages/alchemist), in light and dark, on a 390×844 phone. The screens are the real widgets. `test/golden/fixtures.dart` swaps the daemon client, SSH, the session-log tail and the terminal for a fake host seeded with sample data.
 
 ```sh
 flutter test test/golden                   # compare
@@ -138,7 +149,7 @@ This is OpenRig's **internal** API, not a published contract, and it changes oft
 
 ## Notifications
 
-Run the watcher in [`host/watcher/`](host/watcher/README.md) on the host. It posts to ntfy when a seat starts waiting. Each notification names **role › rig › project › device** and has actions: **Allow once / Deny / Open** for permission prompts, **Reply… / Open** for questions. Allow and Deny answer the seat straight from the lock screen (the phone needs Tailscale on). Set the topic and what to be notified about under **Hosts → your host → Notifications**.
+Run the watcher in [`host/watcher/`](host/watcher/README.md) on the host. When a seat starts waiting it sends a native push (APNs on iOS, FCM on Android; the contract is in [`host/watcher/PUSH.md`](host/watcher/PUSH.md)) and also posts to ntfy. Each notification names **role › rig › project › device** and has actions: **Allow once / Deny / Open** for permission prompts, **Reply… / Open** for questions. Allow and Deny answer the seat straight from the lock screen (the phone needs Tailscale on). Set the ntfy topic and what to be notified about under **Hosts → your host → Notifications**.
 
 Agents started by hand, outside any rig, show up under their project as **Not in a rig**: tmux sessions the daemon finds when it scans, plus any Claude Code session the watcher's hook has seen. Open one to answer it, read its chat, open its terminal, or **adopt** it into a running rig as a new seat. Their permission prompts notify too, as `scratch › no rig › app › homelab`.
 

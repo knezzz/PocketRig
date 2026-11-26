@@ -455,6 +455,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
           Positioned.fill(
           child: PanelPreviewHost(
           seat: isDesktop && target is SeatTarget ? target.seat : null,
+          focus: _focus,
           child: Builder(builder: (context) {
             const pad = 2.0;
             const size = 12.0;

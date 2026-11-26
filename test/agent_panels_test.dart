@@ -187,7 +187,10 @@ void main() {
       tester.view.physicalSize = const Size(1000, 800);
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
-      await pump(tester, PanelPreviewHost(seat: seatFromFixture('r-conveyor', 'lead'), child: const _Live()));
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await pump(tester, PanelPreviewHost(seat: seatFromFixture('r-conveyor', 'lead'), focus: focus, child: Focus(focusNode: focus, autofocus: true, child: const _Live())));
+      expect(focus.hasFocus, isTrue);
       final live = tester.state(find.byType(_Live));
       final mainRight = tester.getTopRight(find.byType(_Live)).dx;
       for (final (tab, item, shown) in [('Files 1', 'c.dart', ArtifactViewer), ('Artifacts 3', 'report.html', ArtifactViewer), ('Images 2', 'a.png', MediaViewer)]) {
@@ -199,10 +202,12 @@ void main() {
         expect(find.text(tab), findsOneWidget, reason: 'the dock stays open beside it');
         expect(tester.getTopRight(find.byType(shown)).dx, mainRight, reason: 'in the main area, not over the dock');
         expect(find.byType(_Live, skipOffstage: false), findsOneWidget, reason: 'the live child stays mounted');
+        expect(focus.hasFocus, isFalse, reason: 'the hidden child takes no keys');
         await tester.tap(find.byTooltip('Back'));
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump();
         expect(find.byType(shown), findsNothing, reason: 'Back closes it');
+        expect(focus.hasFocus, isTrue, reason: 'typing goes on without a click');
         expect(tester.state(find.byType(_Live)), same(live), reason: 'the same live child, not a rebuilt one');
       }
       await tester.pumpWidget(const SizedBox.shrink());

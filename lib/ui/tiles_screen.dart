@@ -339,7 +339,7 @@ class _TileState extends State<_Tile> {
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
     // The dock sits outside the tile's Listener: clicks in it don't count toward a double click.
-    return PanelPreviewHost(seat: widget.big ? widget.seat : null, child: Listener(
+    return PanelPreviewHost(seat: widget.big ? widget.seat : null, focus: _focus, child: Listener(
       onPointerDown: _down,
       child: DecoratedBox(
         decoration: BoxDecoration(

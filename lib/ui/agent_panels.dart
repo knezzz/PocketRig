@@ -190,9 +190,12 @@ class PanelEmpty extends StatelessWidget {
 /// [child], still mounted (so a terminal keeps its connection and scroll). The preview is a small navigator of its own, so a
 /// diff opened from a file stays in the main area too; Back from the first page closes it. [seat] null: no dock.
 class PanelPreviewHost extends StatefulWidget {
-  const PanelPreviewHost({super.key, required this.child, required this.seat});
+  const PanelPreviewHost({super.key, required this.child, required this.seat, this.focus});
   final Widget child;
   final Seat? seat;
+
+  /// The child's focus (the terminal's): taken back when the preview closes, so typing goes on without a click.
+  final FocusNode? focus;
 
   /// Opens [page] in the main area of the nearest host, or on the navigator when there is none (a phone's sheet).
   static void open(BuildContext context, WidgetBuilder page) {
@@ -235,7 +238,13 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
               Positioned.fill(
                 child: Navigator(
                   key: ValueKey(_opened),
-                  observers: [_BaseObserver(() => setState(() => _page = null))],
+                  observers: [
+                    _BaseObserver(() {
+                      setState(() => _page = null);
+                      // After the child is back in the focus tree (ExcludeFocus off), not before.
+                      WidgetsBinding.instance.addPostFrameCallback((_) => widget.focus?.requestFocus());
+                    })
+                  ],
                   onGenerateInitialRoutes: (_, __) => [
                     PageRouteBuilder<void>(pageBuilder: (_, __, ___) => const SizedBox.shrink()),
                     MaterialPageRoute<void>(builder: page),

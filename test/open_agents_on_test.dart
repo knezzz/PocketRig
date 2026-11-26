@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pocket_rig/data/loose_agents.dart';
 import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/ui/agent_view_switch.dart';
 import 'package:pocket_rig/ui/chat/rig_chat_pager.dart' show RigChatPager;

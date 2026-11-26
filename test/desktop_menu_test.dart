@@ -131,4 +131,34 @@ void main() {
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);
     await tester.pump(const Duration(milliseconds: 200));
   });
+
+  testWidgets('a rebuild while the popup is open keeps the arrow-focused row focused', (tester) async {
+    final dark = ValueNotifier(false);
+    ran.clear();
+    await tester.pumpWidget(ValueListenableBuilder<bool>(
+      valueListenable: dark,
+      builder: (_, d, __) => MaterialApp(
+        theme: buildTheme(d ? Tokens.dark : Tokens.light, d ? Brightness.dark : Brightness.light),
+        home: Scaffold(body: Builder(builder: (c) => TextButton(onPressed: () => showDesktopMenu(c, rows(), at: const Offset(200, 100)), child: const Text('go')))),
+      ),
+    ));
+    await tester.tap(find.text('go'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+    dark.value = true; // the theme changes: the menu rebuilds
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(ran, ['rename'], reason: 'the second row was still the focused one');
+  });
+
+  test('the highlighted row stands out from the menu in both themes', () {
+    for (final k in [Tokens.light, Tokens.dark]) {
+      final a = menuHighlight(k).computeLuminance(), b = k.surface.computeLuminance();
+      final ratio = (a > b ? a + .05 : b + .05) / (a > b ? b + .05 : a + .05);
+      expect(ratio, greaterThanOrEqualTo(1.25), reason: k.isDark ? 'dark' : 'light');
+    }
+  });
 }

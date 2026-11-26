@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/fleet.dart' show fleet;
+import '../../data/host_store.dart' show isDesktop;
 import '../../main.dart';
 import '../../models.dart';
 import '../../terminal/transport.dart';
@@ -11,11 +12,13 @@ import '../common.dart';
 import '../desktop_menu.dart' show menuBreak;
 import '../desktop_shell.dart' show detailNavigator;
 import '../kit.dart';
+import '../project_actions.dart' show projectNameOf;
 import '../rig_screen.dart' show editRigSpec;
 import '../send_guard.dart';
 import '../terminal_screen.dart';
 import '../theme.dart';
 import 'add_to_queue_sheet.dart' show canQueue, showAddToQueue;
+import 'rig_bar.dart' show showRigSheet;
 
 /// Runs the seat sheet's context picks: 'clear' and 'compact'.
 Future<void> runSeatAction(
@@ -111,6 +114,11 @@ Future<void> editSeatInSpec(BuildContext context, Seat s, String rigName, {bool 
   }
 }
 
+RigWithSeats? _rigOf(BuildContext context, Seat s) {
+  final host = AppScope.read(context).active;
+  return host == null ? null : fleet.feedFor(host).rigs.where((r) => r.rig.id == s.rigId).firstOrNull;
+}
+
 /// The one ⋯ list of an agent, for its header, its tile, the sidebar and the command palette: Open as chat / terminal,
 /// then Agent details (the seat sheet), Compact, Clear context…, Add to queue…, Edit this seat in the spec, and the red
 /// Kill session… and Remove from rig…. The caller says what differs: [onChat] / [onTerminal] open the view in its own way
@@ -164,6 +172,17 @@ ActionRows seatMenuRows(BuildContext context, String rigName, Seat s,
       ),
     if (s.nodeId != null && s.rigId.isNotEmpty)
       (Icons.edit_outlined, 'Edit this seat in the spec', null, () => editSeatInSpec(context, s, rigName)),
+    // The phone has no rig row above the agent: its rig's ⋯ sheet is one row away. A rig seat only; the Mac leaves it out.
+    if (!isDesktop && s.rigId.isNotEmpty && rigName != 'no rig' && _rigOf(context, s) != null)
+      (
+        Icons.account_tree_outlined,
+        'Rig actions…',
+        null,
+        () {
+          final r = _rigOf(context, s);
+          if (r != null) showRigSheet(context, r.rig, r.seats, projectName: projectNameOf(r.primaryCwd ?? r.rig.name));
+        }
+      ),
   ], danger: [
     if (s.nodeId != null && live)
       (

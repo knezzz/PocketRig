@@ -24,6 +24,29 @@ RigActionSet rigActionSet(BuildContext context, Rig rig, List<Seat> seats) {
   );
 }
 
+/// The rig's ⋯ sheet on a phone: + New, Message all, Room, Reminders and Rig details above the rig's options. The rig page's
+/// ⋯ and an agent's 'Rig actions…' show it. [onRigPage]: it is the rig page, so no Rig details.
+void showRigSheet(BuildContext context, Rig rig, List<Seat> seats,
+    {required String projectName, bool onRigPage = false, VoidCallback? onDeleted}) {
+  final set = rigActionSet(context, rig, seats);
+  final rows = rigActionRows(context, rig, seats, projectName: projectName, onDeleted: onDeleted);
+  final own = <ActionRow>[
+    (Icons.add, 'New', null, set.onNew),
+    (Icons.campaign_outlined, 'Message all', null, set.onMessageAll),
+    (Icons.forum_outlined, 'Room', null, set.onRoom),
+    (Icons.notifications_none, 'Reminders', null, set.onReminders),
+    if (!onRigPage)
+      (
+        Icons.info_outline,
+        'Rig details',
+        null,
+        () => Navigator.of(context).pushReplacement(
+            MaterialPageRoute<void>(builder: (_) => RigScreen(rig: rig, projectName: projectName)))
+      ),
+  ];
+  showActionRows(context, rig.name, (items: [...own, ...rows.items], danger: rows.danger));
+}
+
 /// The rig's fixed row of actions, for a view's header: on a window wide enough [+ New] [Message all] [Room] [Reminders]
 /// [Rig details] and the ⋯ with the rig's options; narrower (a phone) only the ⋯, whose sheet has those same actions above the
 /// options. [onRigPage]: this is the rig page, so Rig details is shown selected. [onDeleted] lets the view leave when the rig goes.
@@ -37,21 +60,12 @@ List<Widget> rigBarActions(
   VoidCallback? onDeleted,
 }) {
   final set = rigActionSet(context, rig, seats);
-  void details() => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(builder: (_) => RigScreen(rig: rig, projectName: projectName)));
   void more() {
-    final rows = rigActionRows(context, rig, seats, projectName: projectName, onDeleted: onDeleted);
     if (wide) {
-      showActionRows(context, rig.name, rows);
-      return;
+      showActionRows(context, rig.name, rigActionRows(context, rig, seats, projectName: projectName, onDeleted: onDeleted));
+    } else {
+      showRigSheet(context, rig, seats, projectName: projectName, onRigPage: onRigPage, onDeleted: onDeleted);
     }
-    final own = <ActionRow>[
-      (Icons.add, 'New', null, set.onNew),
-      (Icons.campaign_outlined, 'Message all', null, set.onMessageAll),
-      (Icons.forum_outlined, 'Room', null, set.onRoom),
-      (Icons.notifications_none, 'Reminders', null, set.onReminders),
-      if (!onRigPage) (Icons.info_outline, 'Rig details', null, details),
-    ];
-    showActionRows(context, rig.name, (items: [...own, ...rows.items], danger: rows.danger));
   }
 
   return [

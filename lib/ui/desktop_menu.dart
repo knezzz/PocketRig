@@ -44,6 +44,10 @@ void trackMenuAnchor() {
 
 const _menuWidth = 220.0;
 
+/// The hovered or arrow-focused row: the ink laid over the menu's own ground, so it reads in both themes (the plain fill
+/// token is almost the dark menu's ground).
+Color menuHighlight(Tokens k) => Color.alphaBlend(k.ink.withValues(alpha: 0.14), k.surface);
+
 /// Under the button, its right edge on the menu's when the button is in the right half of the window, else the left
 /// edges together; at the pointer for a right click or a press held long enough to be a long press.
 Offset _startFor(BuildContext context) {
@@ -87,7 +91,11 @@ class _MenuHostState extends State<_MenuHost> {
   final _controller = MenuController();
   final _focus = FocusNode(debugLabel: 'desktop menu');
   // The enabled rows' focus, in order: a first ↓ or ↑ lands on the first or last one, and the menu takes over from there.
-  final _nodes = <FocusNode>[];
+  // Made once (a rebuild while the menu is open keeps an arrow-focused row focused).
+  late final List<FocusNode> _nodes = List.generate(
+      [for (final r in widget.rows.items) if (!isMenuBreak(r) && r.$4 != null) r].length + widget.rows.danger.length,
+      (_) => FocusNode());
+  var _next = 0;
   var _closed = false;
 
   @override
@@ -132,8 +140,7 @@ class _MenuHostState extends State<_MenuHost> {
 
   Widget _item(Tokens k, ActionRow r, {bool danger = false}) {
     final (icon, label, _, run) = r;
-    FocusNode? node;
-    if (run != null) _nodes.add(node = FocusNode());
+    final node = run == null ? null : _nodes[_next++];
     final fg = danger ? outlinedRed(k) : k.ink;
     return MenuItemButton(
       focusNode: node,
@@ -150,7 +157,7 @@ class _MenuHostState extends State<_MenuHost> {
         foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.disabled) ? k.muted : fg),
         iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.disabled) ? k.muted : (danger ? fg : k.muted)),
         backgroundColor: WidgetStateProperty.resolveWith(
-            (s) => s.contains(WidgetState.hovered) || s.contains(WidgetState.focused) ? k.fill : Colors.transparent),
+            (s) => s.contains(WidgetState.hovered) || s.contains(WidgetState.focused) ? menuHighlight(k) : Colors.transparent),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
       child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -160,10 +167,7 @@ class _MenuHostState extends State<_MenuHost> {
   @override
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
-    for (final n in _nodes) {
-      n.dispose();
-    }
-    _nodes.clear();
+    _next = 0;
     final items = [for (final r in widget.rows.items) r];
     Widget sep() => Padding(padding: const EdgeInsets.symmetric(vertical: 3), child: Divider(height: 1, thickness: 1, color: k.divider));
     final children = <Widget>[];

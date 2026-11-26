@@ -62,4 +62,21 @@ void main() {
     expect(link, isNull);
     expect(t.closed, isTrue);
   });
+
+  test('a right click is not sent to tmux (its own pane menu); the left button still is', () async {
+    final t = _T();
+    debugOpenTerminal = (h, tg) async => t;
+    addTearDown(() => debugOpenTerminal = null);
+    final term = Terminal(maxLines: 100);
+    final typed = <String>[];
+    await connectTerminal(host, target, term, onInput: typed.add, alive: () => true, onError: (_) {});
+    // tmux with mouse on: click reporting, SGR coordinates.
+    term.write('\x1b[?1000h\x1b[?1006h');
+    const at = CellOffset(3, 2);
+    expect(term.mouseInput(TerminalMouseButton.right, TerminalMouseButtonState.down, at), isTrue, reason: 'taken: no callback runs');
+    expect(term.mouseInput(TerminalMouseButton.right, TerminalMouseButtonState.up, at), isTrue);
+    expect(typed, isEmpty, reason: 'nothing reaches tmux for the right button');
+    term.mouseInput(TerminalMouseButton.left, TerminalMouseButtonState.down, at);
+    expect(typed, ['\x1b[<0;4;3M'], reason: 'the left button is reported as before');
+  });
 }

@@ -141,7 +141,7 @@ void main() {
       expect(on(from), findsOneWidget);
       await tester.tap(find.descendant(of: on(from), matching: find.text(label)));
       await settle();
-      expect(on(to), findsOneWidget, reason: '$label');
+      expect(on(to), findsOneWidget, reason: label);
       expect(on(from), findsNothing, reason: 'replaced, not stacked');
     }
 

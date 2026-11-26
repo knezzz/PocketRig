@@ -26,6 +26,7 @@ class AgentHeader extends StatelessWidget {
     this.views = const AgentViews(),
     this.extraActions = const [],
     this.bottom,
+    this.showBack = true,
   });
 
   /// Null for a project shell: no mark, no context.
@@ -44,6 +45,9 @@ class AgentHeader extends StatelessWidget {
   final AgentViews views;
   final List<Widget> extraActions;
   final Widget? bottom;
+
+  /// False under another header that has the Back (the rig's, over an enlarged tile's row).
+  final bool showBack;
 
   @override
   Widget build(BuildContext context) {
@@ -91,7 +95,7 @@ class AgentHeader extends StatelessWidget {
             LayoutBuilder(builder: (context, box) {
               final wide = box.maxWidth >= 640;
               return Row(children: [
-                if (Navigator.of(context).canPop())
+                if (showBack && Navigator.of(context).canPop())
                   IconButton(
                     tooltip: 'Back',
                     onPressed: () => Navigator.of(context).maybePop(),

@@ -4,7 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pocket_rig/data/host_store.dart' show isDesktop;
 import 'package:pocket_rig/data/projects.dart' show groupByWorktree;
 import 'package:pocket_rig/models.dart';
+import 'package:pocket_rig/ui/agent_header.dart' show AgentHeader;
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
+import 'package:pocket_rig/ui/terminal_screen.dart' show TerminalScreen;
 import 'package:pocket_rig/ui/rig/rig_host.dart' show RigHost;
 import 'package:pocket_rig/ui/rig_screen.dart' show RigScreen;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
@@ -101,9 +103,13 @@ void main() {
     final tilesState = tester.state(find.byType(TilesScreen));
     final detailsButton = find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details'));
 
+    Color? ink(Finder f) => tester.widget<OutlinedButton>(find.descendant(of: f, matching: find.widgetWithText(OutlinedButton, 'Rig details'))).style?.foregroundColor?.resolve({});
+    final accent = Tokens.light.accent;
+    expect(ink(find.byType(TilesScreen)), isNot(accent), reason: 'on the tiles Rig details looks normal');
     await tester.tap(detailsButton);
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(RigScreen), findsOneWidget, reason: 'Rig details shows the page');
+    expect(ink(find.byType(RigScreen)), accent, reason: 'while the page shows it is selected');
     expect(find.text('Tiles'), findsNothing, reason: 'no Tiles button: Rig details toggles');
     expect(find.byType(TilesScreen), findsNothing, reason: 'the tiles are hidden');
     expect(find.byType(TilesScreen, skipOffstage: false), findsOneWidget, reason: 'but still mounted');
@@ -126,6 +132,53 @@ void main() {
     expect(find.byType(TilesScreen), findsOneWidget, reason: 'the tiles come up');
     expect(find.byType(RigScreen), findsNothing);
     expect(opened, n, reason: 'enlarging used the tile\'s own client');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('an enlarged tile gets the agent row under the rig row (name left; Chat | Terminal, panels toggle, ⋯ right), not a second page header; a rig chat\'s Terminal enlarges the live tile instead of opening a second client',
+      (tester) async {
+    final store = await installFakes();
+    isDesktop = true;
+    addTearDown(() => isDesktop = false);
+    var opened = 0;
+    debugOpenTerminal = (h, t) async {
+      opened++;
+      return FakeTerminal('view');
+    };
+    final rig = rigFromFixture('r-conveyor');
+    final seats = [for (final n in nodes['r-conveyor']!) Seat.fromJson(n)];
+    final n = seats.where((s) => s.isAgent && s.state != SeatState.stopped).length;
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await tester.pumpWidget(MaterialApp(home: phone(store, RigHost(rig: rig, seats: seats, projectName: 'app'), width: 1400, height: 900)));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(AgentHeader), findsNothing, reason: 'no agent row while the grid shows');
+    final lead = seatFromFixture('r-conveyor', 'lead');
+    tester.state<NavigatorState>(find.byType(Navigator).last).push(
+        MaterialPageRoute<void>(builder: (_) => ChatScreen(rigName: 'conveyor', seat: lead, asChat: true)));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(ChatScreen), findsOneWidget);
+    await tester.tap(find.descendant(of: find.byType(AgentHeader), matching: find.text('Terminal')));
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(ChatScreen), findsNothing, reason: 'the chat went; the tile is the terminal');
+    expect(find.byType(TerminalScreen), findsNothing, reason: 'no second terminal screen');
+    expect(opened, n, reason: 'no second client for that agent');
+
+    final row = find.byType(AgentHeader);
+    expect(row, findsOneWidget, reason: 'the enlarged tile\'s agent row');
+    expect(find.descendant(of: row, matching: find.text('lead')), findsOneWidget);
+    expect(find.descendant(of: row, matching: find.byTooltip('Back')), findsNothing, reason: 'the rig row above has the Back');
+    final rig0 = tester.getRect(find.byTooltip('Rig options'));
+    final agentMenu = tester.getRect(find.byTooltip('Actions for lead'));
+    expect(agentMenu.right, lessThanOrEqualTo(rig0.right), reason: 'the agent ⋯ at the right edge, with the rig ⋯ above');
+    expect(tester.getRect(find.descendant(of: row, matching: find.text('lead'))).left, lessThan(300), reason: 'the name at the left');
+    expect(tester.getRect(find.text('Terminal')).left, greaterThan(tester.getRect(find.descendant(of: row, matching: find.text('lead'))).right),
+        reason: 'the switch, toggle and ⋯ on the right');
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });

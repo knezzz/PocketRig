@@ -45,6 +45,7 @@ import 'chat/question_card.dart';
 import 'common.dart';
 import 'send_guard.dart';
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
+import 'tiles_screen.dart' show terminalInTile;
 import 'needs_you_banner.dart';
 import 'kit.dart';
 import 'loose_agent_screen.dart';

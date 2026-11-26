@@ -12,6 +12,7 @@ import '../needs_you_banner.dart';
 import '../project_actions.dart' show projectNameOf;
 import '../rig/rig_bar.dart' show RigBar;
 import '../terminal_screen.dart';
+import '../tiles_screen.dart' show terminalInTile;
 import '../theme.dart';
 import 'chat_header.dart';
 import 'seat_switcher.dart';
@@ -106,11 +107,15 @@ class _RigChatPagerState extends State<RigChatPager> {
   }
 
   /// The terminal takes this screen's place (not a page over it): Back leaves the agent.
-  void _toTerminal(Seat s) => switchAgentView(
-        context,
-        (_) => TerminalScreen(target: SeatTarget(widget.rigName, s)),
-        session: s.sessionName,
-      );
+  void _toTerminal(Seat s) {
+    // The rig's tiles are alive: that agent's terminal is its tile, enlarged (one client).
+    if (terminalInTile(context, s)) return;
+    switchAgentView(
+      context,
+      (_) => TerminalScreen(target: SeatTarget(widget.rigName, s)),
+      session: s.sessionName,
+    );
+  }
 
   void _tapTab(Seat s) {
     if (s.logicalId == _selected) return;

@@ -32,11 +32,11 @@ import 'package:pocket_rig/ui/status_shape.dart' show Status;
 import 'package:pocket_rig/ui/usage_strip.dart' show debugUsageClock;
 import 'package:pocket_rig/ui/needs_you_banner.dart' show inboxRequests;
 import 'package:pocket_rig/ui/new_sheet.dart' show showNew;
-import 'package:pocket_rig/ui/rig_screen.dart' show RigScreen;
 import 'package:pocket_rig/ui/terminal_screen.dart' show TerminalScreen;
 import 'package:drift/native.dart' show NativeDatabase;
 import 'package:pocket_rig/data/chat_cache.dart' show ChatCache, RigMedia, chatCache, chatKey;
 import 'package:pocket_rig/ui/agent_panels_sheet.dart' show showPanelsSheet;
+import 'package:pocket_rig/ui/rig/rig_host.dart' show rigRoute;
 import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer;
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
 import 'package:pocket_rig/data/git_status.dart' show Worktree;
@@ -372,7 +372,8 @@ void _open(String screen) {
     debugOpenTerminal = (h, t) async => FakeTerminal('ssh homelab · tmux attach -t conveyor-lead', lines: lines);
   }
   Widget rigPage(String id, {int initialTab = 0, int tab = 0}) =>
-      RigScreen(rig: rigFromFixture(id), projectName: 'app', initialTab: initialTab, tab: tab);
+      // As the app builds one: a host on the Mac (Rig details toggles to the tiles in one click), the plain page on a phone.
+      rigRoute(rigFromFixture(id), 'app', initialTab: initialTab, tab: tab);
   final page = switch (screen) {
     'rig' => rigPage('r-conveyor'),
     'rig-graph' => rigPage('r-conveyor', initialTab: 1),

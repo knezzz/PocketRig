@@ -80,10 +80,16 @@ List<Widget> rigBarActions(
 /// The rig's header above an agent's chat on the Mac: the page's own header (the same PageHeader, so the same height, the same x
 /// and y for every button, the ⋯ at the right edge), without a Back (the agent's header under it has it).
 class RigBar extends StatelessWidget {
-  const RigBar({super.key, required this.rig, required this.seats, required this.projectName});
+  const RigBar({super.key, required this.rig, required this.seats, required this.projectName, this.showBack = false, this.qualified = false});
   final Rig rig;
   final List<Seat> seats;
   final String projectName;
+
+  /// The tiles screen has no agent header under it: the Back is this one's.
+  final bool showBack;
+
+  /// The tiles name the project and, with more than one host, the host too (as they did): 'app / conveyor'.
+  final bool qualified;
 
   @override
   Widget build(BuildContext context) {
@@ -91,8 +97,9 @@ class RigBar extends StatelessWidget {
     final host = AppScope.of(context).active;
     return PageHeader(
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, RigWithSeats(rig, seats), host)),
-      title: host?.rigLabel(rig.name) ?? rig.name,
-      showBack: false,
+      host: qualified && AppScope.of(context).hosts.length > 1 ? host : null,
+      title: qualified ? '$projectName / ${host?.rigLabel(rig.name) ?? rig.name}' : (host?.rigLabel(rig.name) ?? rig.name),
+      showBack: showBack,
       actions: rigBarActions(context,
           rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),
     );

@@ -79,7 +79,8 @@ class _RigViewButton extends StatelessWidget {
     final style = OutlinedButton.styleFrom(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       textStyle: const TextStyle(fontFamily: fontSans, fontSize: 13, fontWeight: FontWeight.w600),
-      backgroundColor: selected ? k.fill : null,
+      backgroundColor: selected ? k.accent.withValues(alpha: .14) : null,
+      foregroundColor: selected ? k.accent : null,
     ).merge(compactAction);
     return Padding(
       padding: const EdgeInsets.only(right: 8),
@@ -87,7 +88,7 @@ class _RigViewButton extends StatelessWidget {
         selected: selected,
         child: OutlinedButton(
           onPressed: onPressed,
-          style: style.copyWith(side: WidgetStatePropertyAll(BorderSide(color: selected ? k.ink : k.border))),
+          style: style.copyWith(side: WidgetStatePropertyAll(BorderSide(color: selected ? k.accent : k.border, width: selected ? 1.5 : 1))),
           child: Row(mainAxisSize: MainAxisSize.min, children: [
             Icon(icon, size: 16),
             const SizedBox(width: 6),

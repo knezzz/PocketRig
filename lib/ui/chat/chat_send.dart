@@ -227,11 +227,15 @@ extension _ChatSend on _ChatPageState {
   }
 
   /// The terminal takes the chat's place (not a page over it): Back leaves the agent.
-  void _toTerminal() => switchAgentView(
-        context,
-        (_) => TerminalScreen(target: SeatTarget(widget.rigName, _seat)),
-        session: widget.seat.sessionName,
-      );
+  void _toTerminal() {
+    // The rig's tiles are alive: that agent's terminal is its tile, enlarged (one client).
+    if (terminalInTile(context, _seat)) return;
+    switchAgentView(
+      context,
+      (_) => TerminalScreen(target: SeatTarget(widget.rigName, _seat)),
+      session: widget.seat.sessionName,
+    );
+  }
 
   Future<void> _fetchFull(ToolCall c) async {
     final host = AppScope.read(context).active, path = _logPath;

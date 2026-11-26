@@ -17,7 +17,7 @@ enum RigMode { tiles, rig }
 ///
 /// A phone, or a stopped rig (no tiles), is the plain [RigScreen]: use [rigRoute] to pick.
 class RigHost extends StatefulWidget {
-  const RigHost({super.key, required this.rig, required this.projectName, this.seats, this.initial = RigMode.tiles, this.enlarge});
+  const RigHost({super.key, required this.rig, required this.projectName, this.seats, this.initial = RigMode.tiles, this.enlarge, this.initialTab = 0, this.tab = 0});
   final Rig rig;
   final String projectName;
 
@@ -27,6 +27,9 @@ class RigHost extends StatefulWidget {
 
   /// Opens the tiles with this seat enlarged.
   final String? enlarge;
+
+  /// The page's first tab and open tab (RigScreen's own).
+  final int initialTab, tab;
 
   /// The nearest host above [context], or null on a screen that is not one.
   static RigHostState? maybeOf(BuildContext context) => context.findAncestorStateOfType<RigHostState>();
@@ -48,14 +51,20 @@ class RigHostState extends State<RigHost> {
         if (_mode == RigMode.tiles) _tilesBuilt = true;
       });
 
+  /// The rigs whose host is mounted (on any route): a chat over it sends its agent's Terminal to the tile.
+  static final _live = <String, RigHostState>{};
+  static bool isLive(String rigId) => _live.containsKey(rigId);
+
   @override
   void initState() {
     super.initState();
+    _live[widget.rig.id] = this;
     enlargeRequest.addListener(_onEnlarge);
   }
 
   @override
   void dispose() {
+    if (identical(_live[widget.rig.id], this)) _live.remove(widget.rig.id);
     enlargeRequest.removeListener(_onEnlarge);
     super.dispose();
   }
@@ -101,13 +110,15 @@ class RigHostState extends State<RigHost> {
           ),
         ),
       if (!tiles)
-        Positioned.fill(key: const ValueKey('page'), child: RigScreen(rig: widget.rig, projectName: widget.projectName)),
+        Positioned.fill(key: const ValueKey('page'), child: RigScreen(rig: widget.rig, projectName: widget.projectName, initialTab: widget.initialTab, tab: widget.tab)),
     ]);
   }
 }
 
 /// A rig's screen: on the Mac a running rig is a [RigHost] (page and tiles), otherwise the plain [RigScreen].
-Widget rigRoute(Rig rig, String projectName, {List<Seat>? seats, RigMode mode = RigMode.rig, String? enlarge, Key? key}) =>
+Widget rigRoute(Rig rig, String projectName,
+        {List<Seat>? seats, RigMode mode = RigMode.rig, String? enlarge, int initialTab = 0, int tab = 0, Key? key}) =>
     isDesktop && rig.status != 'stopped'
-        ? RigHost(key: key, rig: rig, projectName: projectName, seats: seats, initial: mode, enlarge: enlarge)
-        : RigScreen(key: key, rig: rig, projectName: projectName);
+        ? RigHost(
+            key: key, rig: rig, projectName: projectName, seats: seats, initial: mode, enlarge: enlarge, initialTab: initialTab, tab: tab)
+        : RigScreen(key: key, rig: rig, projectName: projectName, initialTab: initialTab, tab: tab);

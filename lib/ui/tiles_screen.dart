@@ -20,12 +20,13 @@ import 'rig/seat_actions.dart' show seatMenuRows;
 import 'rig/seat_sheet.dart' show showSeatSheet;
 import 'agent_panels.dart' show AgentMediaCounts, AgentPanelsToggle, PanelPreviewHost;
 import 'common.dart' show toast;
-import 'chat_screen.dart' show seatScreen;
+import 'agent_header.dart' show AgentHeader;
+import 'agent_view_switch.dart' show AgentView, agentViews;
+import 'chat_screen.dart' show ChatScreen, seatScreen;
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
-import 'rig/rig_bar.dart' show rigBarActions;
-import 'rig/rig_host.dart' show RigHost;
+import 'rig/rig_bar.dart' show RigBar;
+import 'rig/rig_host.dart' show RigHost, RigHostState;
 import 'rig_screen.dart' show RigScreen;
-import 'kit.dart' show PageHeader;
 import 'progress_bar.dart' show ContextBar;
 import 'usage_strip.dart' show contextColor, contextWeight;
 import 'status_shape.dart';
@@ -53,6 +54,16 @@ bool tilesEnlarge(String rigId, String seat) {
   final taken = enlargeRequest.value == null;
   enlargeRequest.value = null;
   return taken;
+}
+
+/// An agent's terminal from a chat on the Mac: when the rig's tiles are alive (its host is on a route under this chat) the tile
+/// enlarges and this chat goes, so the agent keeps its one client; false when there are no such tiles (open a terminal screen).
+bool terminalInTile(BuildContext context, Seat seat) {
+  if (!isDesktop || !TilesScreen.tiled(seat) || !RigHostState.isLive(seat.rigId)) return false;
+  Navigator.of(context).maybePop();
+  // After the chat has left, the tiles' route is the current one and takes the request.
+  WidgetsBinding.instance.addPostFrameCallback((_) => tilesEnlarge(seat.rigId, seat.logicalId));
+  return true;
 }
 
 /// Every running agent of a rig as a live terminal in one grid (desktop). Each tile reflows, resizing its agent's window
@@ -138,14 +149,34 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
     } catch (_) {/* keep the last known seats */}
   }
 
+  /// Each tile's state, so the agent row over an enlarged one can open the tile's own ⋯ list.
+  final _tileKeys = <String, GlobalKey<_TileState>>{};
+
   void _toggle(Seat s) {
     _enlarge(_enlarged == s.logicalId ? null : s.logicalId);
+  }
+
+  Widget _agentRow(BuildContext context, Seat s) {
+    final cwd = s.cwd;
+    return AgentHeader(
+      seat: s,
+      title: s.logicalId,
+      subtitle: Text(cwd == null ? widget.rig.name : '${widget.projectName} › ${widget.rig.name}',
+          style: mono(context), maxLines: 1, overflow: TextOverflow.ellipsis),
+      menuTooltip: 'Actions for ${s.logicalId}',
+      onMenu: () => _tileKeys[s.logicalId]?.currentState?._menu(),
+      showing: AgentView.terminal,
+      views: agentViews(s),
+      onSwitch: () => Navigator.of(context)
+          .push(MaterialPageRoute<void>(builder: (_) => ChatScreen(rigName: widget.rig.name, seat: s, asChat: true))),
+      extraActions: const [AgentPanelsToggle()],
+      showBack: false,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
-    final host = AppScope.of(context).active;
     final enlarged = _seats.indexWhere((s) => s.logicalId == _enlarged);
     // The sidebar marks the enlarged agent, else the rig.
     showsInPanel(context, enlarged >= 0 ? seatPanelKey(_seats[enlarged]) : 'rig:${widget.rig.id}');
@@ -153,6 +184,7 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
     final cols = n == 0 ? 1 : math.sqrt(n).ceil();
     final rows = n == 0 ? 1 : (n / cols).ceil();
     Widget tile(Seat s, {required bool big}) => _Tile(
+          key: _tileKeys.putIfAbsent(s.logicalId, () => GlobalKey<_TileState>()),
           rigName: widget.rig.name,
           seat: s,
           big: big,
@@ -164,23 +196,11 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
     return Scaffold(
       backgroundColor: k.termBg,
       body: Column(children: [
-        PageHeader(
-          // The host only when there is more than one to tell apart.
-          host: AppScope.of(context).hosts.length > 1 ? host : null,
-          title: '${widget.projectName} / ${host?.rigLabel(widget.rig.name) ?? widget.rig.name}',
-          subtitle: n == 0 ? Text('no running agents', style: Theme.of(context).textTheme.bodySmall) : null,
-          actions: [
-            // The enlarged tile is the agent's full terminal: it gets the panel dock too.
-            if (enlarged >= 0) const AgentPanelsToggle(),
-            // The rig's fixed row, as on its page: Rig details opens the page in this screen's place.
-            ...rigBarActions(context,
-                rig: widget.rig,
-                seats: _seats,
-                projectName: widget.projectName,
-                wide: true,
-                onDeleted: () => Navigator.of(context).maybePop()),
-          ],
-        ),
+        // The rig's fixed row, the one the page and the chat have; Rig details opens the page in this screen's place.
+        RigBar(rig: widget.rig, seats: _seats, projectName: widget.projectName, showBack: true, qualified: true),
+        // An enlarged tile is the agent's full terminal: its row (name at the left; Chat | Terminal, the panels toggle and ⋯ at the
+        // right) under the rig's, with the dock beside the terminal.
+        if (enlarged >= 0) _agentRow(context, _seats[enlarged]),
         Expanded(
           child: Padding(
             padding: const EdgeInsets.all(4),
@@ -240,7 +260,8 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
 
 class _Tile extends StatefulWidget {
   const _Tile(
-      {required this.rigName,
+      {super.key,
+      required this.rigName,
       required this.seat,
       required this.big,
       required this.focused,
@@ -371,7 +392,7 @@ class _TileState extends State<_Tile> {
         // Square corners: the rough terminal look.
         child: ClipRect(
           child: Column(children: [
-            LayoutBuilder(builder: (context, box) => Container(
+            if (!widget.big) LayoutBuilder(builder: (context, box) => Container(
               height: 28,
               color: k.ground,
               padding: const EdgeInsets.symmetric(horizontal: 8),

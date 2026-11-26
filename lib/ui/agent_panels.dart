@@ -224,8 +224,8 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
   @override
   void didUpdateWidget(PanelPreviewHost old) {
     super.didUpdateWidget(old);
-    // The dock went (a tile shrank): so does what it opened.
-    if (widget.seat == null) _page = null;
+    // The dock went (a tile shrank) or follows another agent (the chat's pager): what it opened goes too.
+    if (widget.seat == null || old.seat?.logicalId != widget.seat?.logicalId) _page = null;
   }
 
   void _open(WidgetBuilder page) => setState(() {

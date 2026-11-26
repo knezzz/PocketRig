@@ -354,6 +354,31 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('a host that follows another agent (the chat\'s pager) shows that agent\'s dock and drops the first one\'s preview', (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final lead = seatFromFixture('r-conveyor', 'lead');
+      final review = seatFromFixture('r-conveyor', 'review');
+      await pump(tester, PanelPreviewHost(seat: lead, child: const _Live()));
+      final store = AppScope.of(tester.element(find.byType(PanelPreviewHost)));
+      Widget host(Seat s) => AppScope(
+          store: store,
+          child: MaterialApp(theme: buildTheme(Tokens.light, Brightness.light), home: Scaffold(body: PanelPreviewHost(seat: s, child: const _Live()))));
+      await tester.pumpWidget(host(lead));
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.tap(find.text('Files 1'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('c.dart'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ArtifactViewer), findsOneWidget);
+      await tester.pumpWidget(host(review));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ArtifactViewer), findsNothing, reason: 'the first agent\'s file is not the second\'s preview');
+      expect(tester.widget<AgentPanelDock>(find.byType(AgentPanelDock)).seat.logicalId, 'review');
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('the dock is tabs: Info first, then Files, Images and Artifacts with their counts; it drags wider and hides',
         (tester) async {
       tester.view.physicalSize = const Size(1000, 2000);

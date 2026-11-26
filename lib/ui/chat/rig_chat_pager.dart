@@ -7,6 +7,7 @@ import '../../main.dart' show AppScope;
 import '../../models.dart';
 import '../../terminal/transport.dart';
 import '../chat_screen.dart';
+import '../agent_panels.dart' show AgentPanelsToggle, PanelPreviewHost;
 import '../agent_view_switch.dart';
 import '../needs_you_banner.dart';
 import '../project_actions.dart' show projectNameOf;
@@ -151,11 +152,17 @@ class _RigChatPagerState extends State<RigChatPager> {
           onSwitch: () => _toTerminal(_pages.firstWhere((s) => s.logicalId == _selected)),
           git: git,
           onGit: (g) => showGitSheet(context, g),
+          // The Mac: the panels toggle in the agent row, left of the Chat | Terminal switch.
+          extraActions: [if (isDesktop) const AgentPanelsToggle()],
           tabs: _tabs.length > 1 ? SeatSwitcher(seats: _tabs, selected: _selected, onTap: _tapTab) : null,
         ),
         Expanded(
-          // The page that has stopped moving is the one that runs: not the neighbour a drag is passing through.
-          child: NotificationListener<ScrollEndNotification>(
+          // The dock and its previews beside the pages (the Mac), following the agent on show.
+          child: PanelPreviewHost(
+            seat: isDesktop ? _pages.where((s) => s.logicalId == _selected).firstOrNull : null,
+            headerBack: Navigator.of(context).canPop(),
+            // The page that has stopped moving is the one that runs: not the neighbour a drag is passing through.
+            child: NotificationListener<ScrollEndNotification>(
             onNotification: (n) {
               if (n.depth != 0) return false;
               final settled = pages[_controller.page!.round().clamp(0, pages.length - 1)].logicalId;
@@ -187,6 +194,7 @@ class _RigChatPagerState extends State<RigChatPager> {
                 );
               },
             ),
+          ),
           ),
         ),
       ]),

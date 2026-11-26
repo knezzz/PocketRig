@@ -12,7 +12,8 @@ import 'package:pocket_rig/ui/rig/rig_host.dart' show RigHost;
 import 'package:pocket_rig/ui/rig_screen.dart' show RigScreen;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/terminal/transport.dart';
-import 'package:pocket_rig/ui/agent_panels.dart' show AgentPanelDock, AgentPanelsToggle;
+import 'package:pocket_rig/ui/agent_panels.dart' show AgentPanelDock, AgentPanelsToggle, PanelPreviewHost;
+import 'package:pocket_rig/ui/agent_panels_sheet.dart' show PanelsStrip;
 import 'package:pocket_rig/ui/status_shape.dart';
 import 'package:pocket_rig/ui/theme.dart' show Tokens, animateStatusSpinners;
 import 'package:pocket_rig/ui/tiles_screen.dart';
@@ -238,6 +239,40 @@ void main() {
     await settle();
     expect(find.byType(TerminalScreen), findsNothing);
     expect(opened, n);
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
+
+  testWidgets('the Mac chat has the same dock as the terminal, with the toggle in the agent row, the phone chat has the panels strip',
+      (tester) async {
+    final store = await installFakes();
+    Future<void> open(double width) async {
+      await tester.binding.setSurfaceSize(Size(width, 900));
+      await tester.pumpWidget(MaterialApp(
+          home: phone(store, ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true), width: width, height: 900)));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pump(const Duration(seconds: 1));
+    }
+
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    isDesktop = true;
+    addTearDown(() => isDesktop = false);
+    await open(1400);
+    expect(find.byType(AgentPanelDock), findsOneWidget, reason: 'the dock beside the chat');
+    expect(find.descendant(of: find.byType(AgentHeader), matching: find.byType(AgentPanelsToggle)), findsOneWidget,
+        reason: 'the toggle in the agent row');
+    expect(find.byType(PanelPreviewHost), findsOneWidget);
+    expect(tester.widget<AgentPanelDock>(find.byType(AgentPanelDock)).seat.logicalId, 'lead');
+    final toggle = tester.getRect(find.byType(AgentPanelsToggle));
+    expect(toggle.right, lessThan(tester.getRect(find.byTooltip('Menu')).left), reason: 'toggle and ⋯ hug the right, ⋯ last');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+
+    isDesktop = false;
+    await open(390);
+    expect(find.byType(AgentPanelDock), findsNothing, reason: 'no dock on a phone');
+    expect(find.byType(PanelsStrip), findsWidgets, reason: 'the panels strip, which opens the sheet');
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });

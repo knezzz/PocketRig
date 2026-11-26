@@ -44,6 +44,9 @@ import 'chat/permission_dock.dart';
 import 'chat/question_card.dart';
 import 'common.dart';
 import 'send_guard.dart';
+import '../data/host_store.dart' show isDesktop;
+import 'agent_panels.dart' show AgentPanelsToggle, PanelPreviewHost;
+import 'agent_panels_sheet.dart' show PanelsStrip;
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
 import 'tiles_screen.dart' show terminalInTile;
 import 'needs_you_banner.dart';
@@ -754,6 +757,8 @@ class _ChatPageState extends State<ChatPage> {
     final content = <Widget>[
         Expanded(child: PageColumn(maxWidth: chatColumnWidth, child: body)),
         if (_sessionPills() case final pills?) PageColumn(maxWidth: chatColumnWidth, child: pills),
+        // The phone: the agent's files and images, a tap from the sheet (nothing when it has none).
+        if (!isDesktop) PanelsStrip(seat: _seat),
         PageColumn(
           maxWidth: chatColumnWidth,
           child: canRestartInTmux(_seat)
@@ -798,8 +803,13 @@ class _ChatPageState extends State<ChatPage> {
           onSwitch: _toTerminal,
           git: git,
           onGit: (g) => showGitSheet(context, g),
+          // The Mac: the panels toggle in the agent row, and the dock with its previews beside the chat.
+          extraActions: [if (isDesktop) const AgentPanelsToggle()],
         ),
-        ...content,
+        if (isDesktop)
+          Expanded(child: PanelPreviewHost(seat: _seat, headerBack: Navigator.of(context).canPop(), child: Column(children: content)))
+        else
+          ...content,
       ]),
     );
   }

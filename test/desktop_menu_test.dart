@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pocket_rig/data/host_store.dart' show isDesktop;
@@ -41,7 +40,7 @@ void main() {
     expect(find.byType(Divider), findsNWidgets(2), reason: 'one at the break, one before the destructive action');
     final order = ['Open chat', 'Rename', 'Disabled one', 'Kill…'].map((t) => tester.getTopLeft(find.text(t)).dy).toList();
     expect(order, [...order]..sort(), reason: 'in order, the destructive action last');
-    final k = Tokens.light;
+    const k = Tokens.light;
     expect(tester.widget<Text>(find.text('Kill…')).style?.color ?? DefaultTextStyle.of(tester.element(find.text('Kill…'))).style.color, isNot(k.ink));
   });
 

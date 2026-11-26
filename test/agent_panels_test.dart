@@ -9,7 +9,7 @@ import 'package:pocket_rig/models.dart' show Seat;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/agent_panels.dart';
 import 'package:pocket_rig/ui/agent_view_switch.dart';
-import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer, withDarkScheme;
+import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer, groundIfUnstyled, withDarkScheme;
 import 'package:pocket_rig/main.dart' show AppScope;
 import 'package:pocket_rig/ui/chat/media_view.dart' show MediaViewer;
 import 'package:pocket_rig/ui/theme.dart' show Tokens, buildTheme;
@@ -37,6 +37,12 @@ class _Cache extends ChatCache {
 }
 
 void main() {
+  test('a page with no background of its own is painted with the app\'s ground, by a script that leaves styled pages alone', () {
+    final js = groundIfUnstyled(const Color(0xFF282C33));
+    expect(js, contains("style.background='#282c33'"));
+    expect(js, contains('if(t(document.documentElement)&&t(document.body))'), reason: 'only when both are transparent');
+  });
+
   test('a dark HTML preview defaults to a dark page: the colour scheme goes first in the head, wherever the page starts', () {
     const meta = '<meta name="color-scheme" content="dark">';
     expect(withDarkScheme('<!doctype html><html><head><title>x</title></head><body>a</body></html>'),

@@ -32,6 +32,13 @@ class ArtifactViewer extends StatefulWidget {
 
 enum ArtifactKind { markdown, html, code }
 
+/// Script for a page: paints [ground] on the root when neither it nor the body sets a background of its own.
+String groundIfUnstyled(Color ground) {
+  final hex = (ground.toARGB32() & 0xFFFFFF).toRadixString(16).padLeft(6, '0');
+  return "(function(){var t=function(e){var v=getComputedStyle(e).backgroundColor;return v==='rgba(0, 0, 0, 0)'||v==='transparent'};"
+      "if(t(document.documentElement)&&t(document.body))document.documentElement.style.background='#$hex'})()";
+}
+
 /// [html] told to default to a dark page: a dark canvas and light text where it sets no colours of its own (a page's own
 /// background and text colours still win). Goes in as the first thing in the head, after the doctype when there is no head.
 String withDarkScheme(String html) {
@@ -143,6 +150,10 @@ class _ArtifactViewerState extends State<ArtifactViewer> {
               onNavigationRequest: (r) => r.isMainFrame && !r.url.startsWith('about:')
                   ? NavigationDecision.prevent
                   : NavigationDecision.navigate,
+              // A page with no background of its own gets the app's ground, not the web view's near-black (macOS has no backdrop call).
+              onPageFinished: (_) {
+                if (dark) _web?.runJavaScript(groundIfUnstyled(Tokens.of(context).ground)).catchError((Object _) {});
+              },
             ))
             ..loadHtmlString(dark ? withDarkScheme(text) : text);
           // Where the page sets no background: the app's, not white (not on macOS: see setWebBackdrop).

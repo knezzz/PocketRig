@@ -7,7 +7,7 @@
 //   --dart-define=POCKETRIG_DEMO_VARIANT=empty|stopped  This Mac only: nothing at all, or just a stopped rig
 //   New sheet › Location › Type a path…: the fake host answers ~/code/app (a git repository with a worktree), /srv/x (a folder, not
 //   git), ~/code/missing (no such folder), ~/afile.txt (a file); any other path is a folder. (fakeShell in test/golden/fixtures.dart.)
-//   --dart-define=POCKETRIG_DEMO_SCREEN=rig|rig-graph|rig-work|rig-code|rig-progress|rig-stopped|rig-failed|terminal|glyphs|chat|chat-worktree|panels|drawer|settings|host-editor|seat|rig-menu|stop-rig|inbox|new|new-path-ok|new-path-missing|new-path-file|new-path-nogit  opens that screen at launch;
+//   --dart-define=POCKETRIG_DEMO_SCREEN=rig|rig-graph|rig-work|rig-code|rig-progress|rig-stopped|rig-failed|terminal|glyphs|chat|chat-worktree|artifact-html|artifact-html-styled|panels|drawer|settings|host-editor|seat|rig-menu|stop-rig|inbox|new|new-path-ok|new-path-missing|new-path-file|new-path-nogit  opens that screen at launch;
 //   afterwards scripts/demo-screen.sh <screen> opens another in the running app (it polls /tmp/pocketrig-demo-screen-<pid>)
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:async';
@@ -37,6 +37,7 @@ import 'package:pocket_rig/ui/terminal_screen.dart' show TerminalScreen;
 import 'package:drift/native.dart' show NativeDatabase;
 import 'package:pocket_rig/data/chat_cache.dart' show ChatCache, RigMedia, chatCache, chatKey;
 import 'package:pocket_rig/ui/agent_panels_sheet.dart' show showPanelsSheet;
+import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer;
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
 import 'package:pocket_rig/data/git_status.dart' show Worktree;
 import 'package:pocket_rig/models.dart' show Project, Seat;
@@ -385,6 +386,9 @@ void _open(String screen) {
     // conveyor's lead waits on a Bash permission, so its chat shows a pending permission card.
     'chat' => ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true),
     // retry-pair's lead runs in the api-retry worktree: AgentHeader shows the branch with the worktree's name under it ('chat' is the main checkout: the branch only).
+    // An agent's HTML page as the dock opens it: with no colours of its own it follows the theme (dark in dark); with its own it keeps them.
+    'artifact-html' => const ArtifactViewer(path: '$app/reports/plain-report.html'),
+    'artifact-html-styled' => const ArtifactViewer(path: '$app/reports/styled-report.html'),
     'chat-worktree' => ChatScreen(rigName: 'retry-pair', seat: seatFromFixture('r-wa', 'lead'), asChat: true),
     // app has a project shell in the demo scan: its page on the Shells tab.
     'project-shells' => const ProjectScreen(path: app, tab: 4),
@@ -439,7 +443,8 @@ class _DemoMedia extends ChatCache {
     return Stream.value([
       RigMedia('file', '$app/src/rig/router.ts', null, now, key),
       RigMedia('file', '$app/docs/retry-design.md', null, now, key),
-      RigMedia('file', '$app/reports/test-report.html', null, now, key),
+      RigMedia('file', '$app/reports/plain-report.html', null, now, key),
+      RigMedia('file', '$app/reports/styled-report.html', null, now, key),
       RigMedia('image', '$app/docs/retry-flow.png', null, now, key),
     ]);
   }

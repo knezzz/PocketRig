@@ -31,6 +31,19 @@ class ArtifactViewer extends StatefulWidget {
 
 enum ArtifactKind { markdown, html, code }
 
+/// [html] told to default to a dark page: a dark canvas and light text where it sets no colours of its own (a page's own
+/// background and text colours still win). Goes in as the first thing in the head, after the doctype when there is no head.
+String withDarkScheme(String html) {
+  const meta = '<meta name="color-scheme" content="dark">';
+  final head = RegExp(r'<head[^>]*>', caseSensitive: false).firstMatch(html);
+  if (head != null) return html.replaceRange(head.end, head.end, meta);
+  final root = RegExp(r'<html[^>]*>', caseSensitive: false).firstMatch(html);
+  if (root != null) return html.replaceRange(root.end, root.end, '<head>$meta</head>');
+  final doctype = RegExp(r'^\s*<!doctype[^>]*>', caseSensitive: false).firstMatch(html);
+  final at = doctype?.end ?? 0;
+  return html.replaceRange(at, at, meta);
+}
+
 ArtifactKind artifactKind(String path) => switch (path.split('.').last.toLowerCase()) {
       'md' || 'markdown' || 'mdx' => ArtifactKind.markdown,
       'html' || 'htm' => ArtifactKind.html,
@@ -121,7 +134,10 @@ class _ArtifactViewerState extends State<ArtifactViewer> {
         _text = text;
         _readAt = DateTime.now();
         if (artifactKind(widget.path) == ArtifactKind.html) {
+          final dark = Tokens.of(context).isDark;
           _web = WebViewController()
+            // The sheet behind a page that sets no background of its own is the app's, not white.
+            ..setBackgroundColor(Tokens.of(context).ground)
             // Agent-written pages may need JS, but they must not navigate.
             ..setJavaScriptMode(JavaScriptMode.unrestricted)
             ..setNavigationDelegate(NavigationDelegate(
@@ -129,7 +145,7 @@ class _ArtifactViewerState extends State<ArtifactViewer> {
                   ? NavigationDecision.prevent
                   : NavigationDecision.navigate,
             ))
-            ..loadHtmlString(text);
+            ..loadHtmlString(dark ? withDarkScheme(text) : text);
         }
       });
     } catch (e) {

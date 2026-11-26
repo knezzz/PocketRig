@@ -632,6 +632,9 @@ Future<String> fakeShell(String cmd) async {
     return cmd.contains('app') ? '$app/rigs/conveyor/rig.yaml\n$app/rig.review.yaml\n$app/rigs/release/rig.yaml\n' : '';
   }
   if (cmd.contains('head -c 262144')) {
+    // An agent's page with no colours of its own (the demo's dark HTML preview), and one that sets them.
+    if (cmd.contains('plain-report.html')) return '<!doctype html><html><body><h1>Test report</h1><p>14 passed, 0 failed.</p></body></html>';
+    if (cmd.contains('styled-report.html')) return '<!doctype html><html><body style="background:#fff4e0;color:#222"><h1>Styled report</h1><p>This page sets its own colours.</p></body></html>';
     if (cmd.contains('release')) return releaseSpec;
     if (cmd.contains('review')) return _spec('adversarial-review', 1, 'claude-code');
     return _spec('conveyor', 2, 'claude-code').replaceFirst('pod1\n    members:\n      - id: m1\n        runtime: claude-code', 'pod1\n    members:\n      - id: m1\n        runtime: codex');

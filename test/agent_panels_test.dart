@@ -2,13 +2,14 @@ import 'dart:convert';
 
 import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pocket_rig/data/chat_cache.dart';
 import 'package:pocket_rig/models.dart' show Seat;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/agent_panels.dart';
 import 'package:pocket_rig/ui/agent_view_switch.dart';
-import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer;
+import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer, withDarkScheme;
 import 'package:pocket_rig/main.dart' show AppScope;
 import 'package:pocket_rig/ui/chat/media_view.dart' show MediaViewer;
 import 'package:pocket_rig/ui/theme.dart' show Tokens, buildTheme;
@@ -36,6 +37,15 @@ class _Cache extends ChatCache {
 }
 
 void main() {
+  test('a dark HTML preview defaults to a dark page: the colour scheme goes first in the head, wherever the page starts', () {
+    const meta = '<meta name="color-scheme" content="dark">';
+    expect(withDarkScheme('<!doctype html><html><head><title>x</title></head><body>a</body></html>'),
+        '<!doctype html><html><head>$meta<title>x</title></head><body>a</body></html>');
+    expect(withDarkScheme('<HTML lang="en"><body>a</body></HTML>'), '<HTML lang="en"><head>$meta</head><body>a</body></HTML>');
+    expect(withDarkScheme('<!DOCTYPE html>\n<p>a</p>'), '<!DOCTYPE html>$meta\n<p>a</p>', reason: 'after the doctype, which must stay first');
+    expect(withDarkScheme('<p>a</p>'), '$meta<p>a</p>');
+  });
+
   test('an agent\'s panels list the images its tools touched and the files it wrote, not prose mentions', () async {
     final c = ChatCache(NativeDatabase.memory());
     addTearDown(c.close);
@@ -206,7 +216,8 @@ void main() {
         expect(tester.getTopRight(find.byType(shown)).dx, mainRight, reason: 'in the main area, not over the dock');
         expect(find.byType(_Live, skipOffstage: false), findsOneWidget, reason: 'the live child stays mounted');
         expect(focus.hasFocus, isFalse, reason: 'the hidden child takes no keys');
-        await tester.tap(find.byTooltip('Back'));
+        expect(find.byTooltip('Back'), findsNothing, reason: 'the screen\'s header has the Back: the preview shows no second arrow');
+        await Navigator.of(tester.element(find.byType(PanelPreviewHost))).maybePop(); // the header's Back
         await tester.pump(const Duration(milliseconds: 500));
         await tester.pump();
         expect(find.byType(shown), findsNothing, reason: 'Back closes it');
@@ -259,6 +270,46 @@ void main() {
       await tester.pumpWidget(host(null));
       await tester.pump(const Duration(milliseconds: 500));
       expect(find.byType(ArtifactViewer), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('with no header Back the preview keeps one arrow, and Escape or that arrow closes only the preview', (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final seat = seatFromFixture('r-conveyor', 'lead');
+      final focus = FocusNode();
+      addTearDown(focus.dispose);
+      await pump(tester, PanelPreviewHost(seat: seat, child: const _Live())); // sets up the cache
+      final store = AppScope.of(tester.element(find.byType(PanelPreviewHost)));
+      Future<void> show() async {
+        await tester.pumpWidget(AppScope(
+            store: store,
+            child: MaterialApp(
+                theme: buildTheme(Tokens.light, Brightness.light),
+                home: Scaffold(body: PanelPreviewHost(seat: seat, focus: focus, child: Focus(focusNode: focus, autofocus: true, child: const _Live()))))));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.tap(find.text('Files 1'));
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('c.dart'));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(ArtifactViewer), findsOneWidget);
+      }
+
+      await show();
+      expect(find.byTooltip('Back'), findsOneWidget, reason: 'one arrow, so the preview can be closed');
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      expect(find.byType(ArtifactViewer), findsNothing, reason: 'Escape closes it');
+      expect(find.byType(PanelPreviewHost), findsOneWidget);
+      expect(focus.hasFocus, isTrue);
+      await show();
+      await tester.tap(find.byTooltip('Back'));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      expect(find.byType(ArtifactViewer), findsNothing, reason: 'the arrow closes it');
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

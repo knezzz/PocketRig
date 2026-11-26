@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:path_provider/path_provider.dart';
 
 import '../data/chat_cache.dart';
@@ -12,7 +13,8 @@ import 'artifact_viewer.dart';
 import 'chat/media_view.dart';
 import 'chat/message_views.dart' show ArtifactTile;
 import '../data/fleet.dart' show HostFeed;
-import 'kit.dart' show OptionRow, SectionLabel;
+import '../data/host_store.dart' show isDesktop;
+import 'kit.dart' show OptionRow, SectionLabel, panelRouteName;
 import 'progress_bar.dart' show ContextBar;
 import 'tab_strip.dart';
 import 'theme.dart';
@@ -227,17 +229,39 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
         _nav = GlobalKey<NavigatorState>();
       });
 
+  /// Closes the preview and gives the keyboard back to the child (once it is back in the focus tree).
+  void _close() {
+    if (!mounted) return;
+    setState(() => _page = null);
+    WidgetsBinding.instance.addPostFrameCallback((_) => widget.focus?.requestFocus());
+  }
+
+  /// Back and Escape: the page on top of the preview goes first; the last one closes it.
+  void _back() {
+    final n = _nav?.currentState;
+    if (n != null && n.canPop()) {
+      n.maybePop();
+    } else {
+      _close();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final page = _page;
+    // The screen's header has a Back of its own (it closes the preview, below): then the preview shows none, one arrow in all.
+    // Without one the preview keeps its own, or it could not be closed.
+    final headerBack = Navigator.of(context).canPop() && !(isDesktop && ModalRoute.of(context)?.settings.name == panelRouteName);
     // Back (the header's, the shell's) closes the preview first: only a bare host lets the screen go.
     return PopScope(
       canPop: page == null,
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) _nav?.currentState?.maybePop();
+        if (!didPop) _back();
       },
       child: _PreviewScope(
       open: _open,
+      child: CallbackShortcuts(
+      bindings: {if (page != null) const SingleActivator(LogicalKeyboardKey.escape): _back},
       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Expanded(
           child: Stack(children: [
@@ -249,27 +273,24 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
             ),
             if (page != null)
               Positioned.fill(
-                child: Navigator(
-                  key: _nav,
-                  observers: [
-                    _BaseObserver(() {
-                      if (!mounted) return;
-                      setState(() => _page = null);
-                      // After the child is back in the focus tree (ExcludeFocus off), not before.
-                      WidgetsBinding.instance.addPostFrameCallback((_) => widget.focus?.requestFocus());
-                    })
-                  ],
-                  onGenerateInitialRoutes: (_, __) => [
-                    PageRouteBuilder<void>(pageBuilder: (_, __, ___) => const SizedBox.shrink()),
-                    MaterialPageRoute<void>(builder: page),
-                  ],
+                // The preview holds the keyboard, so Escape reaches it.
+                child: Focus(
+                  autofocus: true,
+                  child: Navigator(
+                    key: _nav,
+                    observers: [if (!headerBack) _BaseObserver(_close)],
+                    onGenerateInitialRoutes: (_, __) => [
+                      if (!headerBack) PageRouteBuilder<void>(pageBuilder: (_, __, ___) => const SizedBox.shrink()),
+                      MaterialPageRoute<void>(builder: page),
+                    ],
+                  ),
                 ),
               ),
           ]),
         ),
         if (widget.seat != null) AgentPanelDock(seat: widget.seat!),
       ]),
-    ));
+    )));
   }
 }
 

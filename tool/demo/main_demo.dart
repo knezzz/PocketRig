@@ -7,7 +7,7 @@
 //   --dart-define=POCKETRIG_DEMO_VARIANT=empty|stopped  This Mac only: nothing at all, or just a stopped rig
 //   New sheet › Location › Type a path…: the fake host answers ~/code/app (a git repository with a worktree), /srv/x (a folder, not
 //   git), ~/code/missing (no such folder), ~/afile.txt (a file); any other path is a folder. (fakeShell in test/golden/fixtures.dart.)
-//   --dart-define=POCKETRIG_DEMO_SCREEN=rig|rig-graph|rig-work|rig-code|rig-progress|rig-stopped|rig-failed|terminal|glyphs|chat|panels|drawer|settings|host-editor|seat|rig-menu|stop-rig|inbox|new|new-path-ok|new-path-missing|new-path-file|new-path-nogit  opens that screen at launch;
+//   --dart-define=POCKETRIG_DEMO_SCREEN=rig|rig-graph|rig-work|rig-code|rig-progress|rig-stopped|rig-failed|terminal|glyphs|chat|chat-worktree|panels|drawer|settings|host-editor|seat|rig-menu|stop-rig|inbox|new|new-path-ok|new-path-missing|new-path-file|new-path-nogit  opens that screen at launch;
 //   afterwards scripts/demo-screen.sh <screen> opens another in the running app (it polls /tmp/pocketrig-demo-screen-<pid>)
 // ignore_for_file: invalid_use_of_visible_for_testing_member
 import 'dart:async';
@@ -380,6 +380,8 @@ void _open(String screen) {
     'terminal' || 'glyphs' => TerminalScreen(target: SeatTarget('conveyor', seatFromFixture('r-conveyor', 'lead'))),
     // conveyor's lead waits on a Bash permission, so its chat shows a pending permission card.
     'chat' => ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true),
+    // retry-pair's lead runs in the api-retry worktree: AgentHeader shows the branch with the worktree's name under it ('chat' is the main checkout: the branch only).
+    'chat-worktree' => ChatScreen(rigName: 'retry-pair', seat: seatFromFixture('r-wa', 'lead'), asChat: true),
     // app has a project shell in the demo scan: its page on the Shells tab.
     'project-shells' => const ProjectScreen(path: app, tab: 4),
     // The Worktrees tab (ending in the dashed New worktree row), and a worktree's page (its Changes, and the ⋯ with Delete worktree…).

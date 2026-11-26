@@ -64,6 +64,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 400));
     await tester.tap(find.text('Fold'));
     await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
     expect(side('retry-pair'), findsNothing);
     expect(side('docs-duo'), findsNothing);
     expect(fleet.viewOf(Fleet.folderKey(AppScope.read(tester.element(find.byType(AppShell))).active!, '/Users/me/code/atlas'), false, start: RigView.all), RigView.collapsed);

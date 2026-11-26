@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../data/fleet.dart' show RigView;
+import '../data/host_store.dart' show isDesktop;
+import 'desktop_menu.dart';
 import 'kit.dart';
 
 /// One row of an action list: icon, label, subtitle, what it does (null: shown but disabled).
@@ -21,5 +23,7 @@ typedef DangerRow = (String, IconData, VoidCallback);
 /// What a ⋯ list holds, apart from how it is shown: the sheet shows it, the command palette lists it.
 typedef ActionRows = ({List<ActionRow> items, List<DangerRow> danger});
 
-Future<void> showActionRows(BuildContext context, String? title, ActionRows rows) =>
-    showActionSheet(context, title, rows.items, danger: rows.danger);
+/// The one place a ⋯ list is shown: the Mac's compact popup at the pointer ([showDesktopMenu]), the phone's bottom sheet.
+Future<void> showActionRows(BuildContext context, String? title, ActionRows rows) => isDesktop
+    ? showDesktopMenu(context, rows)
+    : showActionSheet(context, title, [for (final r in rows.items) if (!isMenuBreak(r)) r], danger: rows.danger);

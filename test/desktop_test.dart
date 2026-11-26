@@ -179,6 +179,7 @@ void desktopShellTests() {
 
     await tester.tap(find.text('dotfiles'));
     await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
     expect(find.byType(ProjectScreen), findsOneWidget);
 
     await tester.longPress(find.descendant(of: find.byKey(const ValueKey('sidebar')), matching: find.text('dotfiles')));

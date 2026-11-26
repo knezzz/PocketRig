@@ -7,4 +7,6 @@ Future<void> chooseView(WidgetTester tester, Finder row, String choice) async {
   await tester.pump(const Duration(milliseconds: 400));
   await tester.tap(find.text(choice));
   await tester.pump(const Duration(milliseconds: 400));
+  // The popup (the Mac's list) closes on a frame of its own; the sheet's pick came after its pop.
+  await tester.pump(const Duration(milliseconds: 400));
 }

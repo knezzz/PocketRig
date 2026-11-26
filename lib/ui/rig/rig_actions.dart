@@ -8,6 +8,7 @@ import '../../terminal/transport.dart';
 import '../action_rows.dart';
 import '../busy.dart';
 import '../common.dart';
+import '../desktop_menu.dart' show menuBreak;
 import '../desktop_shell.dart';
 import '../kit.dart';
 import '../project_actions.dart' show projectNameOf;
@@ -70,6 +71,7 @@ ActionRows rigActionRows(
     // A rig that runs in a worktree: the worktree's own page (the sidebar has no row for it).
     if (onOpenWorktree != null) (Icons.call_split, 'Open worktree', null, onOpenWorktree),
     if (view != null && onView != null) ...viewRows(view, anyActive, onView),
+    if (onOpen != null || onOpenWorktree != null || (view != null && onView != null)) menuBreak,
     (Icons.edit_outlined, 'Rename label', 'Only shown in this app', () => renameRigLabel(context, rig)),
     (
       Icons.description_outlined,
@@ -78,6 +80,7 @@ ActionRows rigActionRows(
       () => exclusive(
           rig.id, () => editRigSpec(context, rig, seats, projectName: projectName ?? projectNameOf(cwd ?? rig.name)))
     ),
+    menuBreak,
     if (stopped)
       (Icons.restore_outlined, 'Restore', rig.latestSnapshot, () => restoreRigOnce(context, rig))
     else

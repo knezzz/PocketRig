@@ -250,7 +250,9 @@ void main() {
 
     await tester.tap(find.byTooltip('Seat options'));
     await tester.pumpAndSettle();
-    expect(find.text('Chat'), findsNWidgets(2), reason: 'the seat sheet, as in the chat, has the Chat button too');
+    expect(find.text('Open as chat'), findsOneWidget, reason: 'the agent list, as in the chat and on a tile');
+    expect(find.text('Open as terminal'), findsNothing, reason: 'it is the terminal already');
+    expect(find.text('Agent details'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));

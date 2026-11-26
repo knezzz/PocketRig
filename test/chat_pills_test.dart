@@ -64,16 +64,23 @@ void main() {
     await tester.pump(const Duration(seconds: 5));
   });
 
-  testWidgets('a rig seat\'s ⋯ opens the seat sheet; a loose agent\'s does not', (tester) async {
+  testWidgets('a rig seat\'s ⋯ is the agent list, its Agent details the seat sheet; a loose agent\'s has no seat sheet', (tester) async {
     final store = await installFakes();
     await tester.pumpWidget(MaterialApp(
         home: phone(store, ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true))));
     await _settle(tester);
     await tester.tap(find.byTooltip('Menu'));
     await _settle(tester);
+    expect(find.byType(SeatSheetBody), findsNothing, reason: 'the list first');
+    expect(find.text('Open as chat'), findsNothing, reason: 'the chat is already open');
+    expect(find.text('Open as terminal'), findsOneWidget);
+    await tester.tap(find.text('Agent details'));
+    await _settle(tester);
     expect(find.byType(SeatSheetBody), findsOneWidget);
     expect(find.widgetWithText(OutlinedButton, 'Chat'), findsNothing, reason: 'the chat is already open');
     expect(find.text('Terminal'), findsWidgets);
+    await tester.tapAt(const Offset(10, 10)); // the scrim
+    await _settle(tester);
 
     final agent = scratchAgent();
     await tester.pumpWidget(MaterialApp(

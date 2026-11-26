@@ -76,7 +76,7 @@ List<PaletteCommand> paletteCommands(
         for (final s in r.seats) {
           if (shown == 'seat:${s.rigId}/${s.logicalId}') {
             out.addAll(commandsFromRows(
-                'Seat · ${s.logicalId}', seatActionRows(context, r.rig.name, s, onRefresh: refresh, onGone: leave)));
+                'Seat · ${s.logicalId}', seatMenuRows(context, r.rig.name, s, onRefresh: refresh, onGone: leave)));
           }
         }
       }

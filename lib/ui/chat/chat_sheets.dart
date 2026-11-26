@@ -179,26 +179,37 @@ extension _ChatSheets on _ChatPageState {
   /// session made (files, artifacts, PRs) lives in the pills over the composer.
   Future<void> _showMenu() async {
     final rigSeat = widget.loose == null && !_subagent && _seat.nodeId != null && widget.rigName != 'no rig';
-    // A rig seat: the one seat sheet, as the rig's list and map open it.
+    // A rig seat: the agent's one ⋯ list; Agent details is the seat sheet, as the rig's list and map open it.
     if (rigSeat) {
       final session = _seat.sessionName;
-      await showSeatSheet(
-        context,
-        widget.rigName,
-        _seat,
-        details: _details,
-        mode: _mode == null || _mode!.isEmpty ? null : _mode,
-        fromChat: true,
-        onTerminal: session == null ? null : _toTerminal,
-        onJobs: session == null ? null : _showJobs,
-        onSubagents: _showSubagents,
-        onEditSpec: _editSpec,
-        onGone: () {
-          if (mounted) Navigator.of(context).pop();
-        },
-        onRefresh: _pollSeat,
-      );
-      if (mounted) await _loadMode();
+      void gone() {
+        if (mounted) Navigator.of(context).pop();
+      }
+      await showActionRows(
+          context,
+          _seat.logicalId,
+          seatMenuRows(context, widget.rigName, _seat,
+              fromChat: true,
+              onTerminal: session == null ? null : _toTerminal,
+              onGone: gone,
+              onRefresh: _pollSeat,
+              onDetails: () async {
+                await showSeatSheet(
+                  context,
+                  widget.rigName,
+                  _seat,
+                  details: _details,
+                  mode: _mode == null || _mode!.isEmpty ? null : _mode,
+                  fromChat: true,
+                  onTerminal: session == null ? null : _toTerminal,
+                  onJobs: session == null ? null : _showJobs,
+                  onSubagents: _showSubagents,
+                  onEditSpec: _editSpec,
+                  onGone: gone,
+                  onRefresh: _pollSeat,
+                );
+                if (mounted) await _loadMode();
+              }));
       return;
     }
     // An agent outside a rig: its own list, the one its screen has.

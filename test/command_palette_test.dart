@@ -5,7 +5,7 @@ import 'package:pocket_rig/data/fleet.dart' show fleet;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/command_palette.dart';
 import 'package:pocket_rig/ui/desktop_shell.dart' show panelShows, seatPanelKey;
-import 'package:pocket_rig/ui/rig/seat_actions.dart' show seatActionRows;
+import 'package:pocket_rig/ui/rig/seat_actions.dart' show seatMenuRows;
 import 'package:pocket_rig/ui/rig/seat_sheet.dart' show showSeatSheet;
 import 'package:pocket_rig/ui/terminal_screen.dart' show TerminalScreen;
 
@@ -43,12 +43,12 @@ void main() {
     await _shortcut(tester);
     expect(_palette, findsOneWidget, reason: 'the palette is up');
     final labels = [
-      for (final (_, label, _, run) in seatActionRows(tester.element(_palette), 'conveyor', lead,
+      for (final (_, label, _, run) in seatMenuRows(tester.element(_palette), 'conveyor', lead,
               onRefresh: () async {})
           .items)
         if (run != null) label,
     ];
-    expect(labels, containsAll(['Chat', 'Terminal']));
+    expect(labels, containsAll(['Open as chat', 'Open as terminal']));
     for (final l in labels) {
       expect(_in(find.text(l)), findsOneWidget, reason: 'the palette lists $l');
     }
@@ -67,7 +67,9 @@ void main() {
     final shell = tester.element(find.text('Inbox').first);
     showSeatSheet(shell, 'conveyor', lead);
     await tester.pumpAndSettle();
-    for (final l in labels) {
+    for (final label in labels) {
+      // The sheet's own buttons are Chat and Terminal; the list says Open as chat / terminal.
+      final l = switch (label) { 'Open as chat' => 'Chat', 'Open as terminal' => 'Terminal', _ => label };
       // The sheet is a long list that builds what is on screen: scroll to each.
       // Down first, then back up: the label may be above what the last one left on screen.
       for (var i = 0; i < 40 && find.textContaining(l).evaluate().isEmpty; i++) {
@@ -80,7 +82,7 @@ void main() {
     await tester.pumpAndSettle();
 
     await _shortcut(tester);
-    await tester.tap(_in(find.text('Terminal')));
+    await tester.tap(_in(find.text('Open as terminal')));
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(TerminalScreen), findsOneWidget, reason: 'the command ran after the palette closed');

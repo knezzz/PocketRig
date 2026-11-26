@@ -63,6 +63,8 @@ export 'chat/session_pills.dart';
 import 'permission_card.dart';
 import 'permission_sheet.dart';
 import 'status_shape.dart';
+import 'action_rows.dart' show showActionRows;
+import 'rig/seat_actions.dart' show seatMenuRows;
 import 'rig/seat_sheet.dart' show showSeatSheet;
 import 'rig_screen.dart' show editRigSpec;
 import 'terminal_screen.dart';

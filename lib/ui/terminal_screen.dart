@@ -28,6 +28,8 @@ import 'rig/seat_sheet.dart' show showSeatSheet;
 import 'kit.dart';
 import 'status_shape.dart';
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
+import 'action_rows.dart' show showActionRows;
+import 'rig/seat_actions.dart' show seatMenuRows;
 import 'theme.dart';
 import 'tiles_screen.dart';
 
@@ -355,13 +357,21 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final target = widget.target;
     final extras = <(IconData, String, VoidCallback)>[(Icons.refresh_outlined, 'Reconnect', _reconnect)];
     if (target is SeatTarget && widget.loose == null && target.seat.nodeId != null && target.rigName != 'no rig') {
-      await showSeatSheet(context, target.rigName, _seat ?? target.seat,
-          fromTerminal: true,
-          extraActions: extras,
-          onChat: _toChat,
-          onGone: () {
-            if (mounted) Navigator.of(context).pop();
-          });
+      final seat = _seat ?? target.seat;
+      void gone() {
+        if (mounted) Navigator.of(context).pop();
+      }
+      // The agent's one ⋯ list (also the tile's); Agent details is the seat sheet.
+      await showActionRows(
+          context,
+          seat.logicalId,
+          seatMenuRows(context, target.rigName, seat,
+              fromTerminal: true,
+              onChat: _toChat,
+              onGone: gone,
+              extra: [for (final (icon, label, run) in extras) (icon, label, null, run)],
+              onDetails: () => showSeatSheet(context, target.rigName, seat,
+                  fromTerminal: true, extraActions: extras, onChat: _toChat, onGone: gone)));
       return;
     }
     final host = AppScope.read(context).active;

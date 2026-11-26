@@ -8,6 +8,7 @@ import '../action_rows.dart';
 import '../agent_details.dart';
 import '../chat_screen.dart' show ChatScreen;
 import '../common.dart';
+import '../desktop_menu.dart' show menuBreak;
 import '../desktop_shell.dart' show detailNavigator;
 import '../kit.dart';
 import '../rig_screen.dart' show editRigSpec;
@@ -110,32 +111,46 @@ Future<void> editSeatInSpec(BuildContext context, Seat s, String rigName, {bool 
   }
 }
 
-/// What the seat sheet can do that doesn't need the sheet itself, as a list: the command palette's seat commands.
-/// The sheet adds its own detail rows (permission mode, shells, subagents, git). [onGone] runs after a kill or
-/// remove went through, so a screen showing the seat can leave.
-ActionRows seatActionRows(BuildContext context, String rigName, Seat s,
-    {required Future<void> Function() onRefresh, VoidCallback? onGone}) {
+/// The one ⋯ list of an agent, for its header, its tile, the sidebar and the command palette: Open as chat / terminal,
+/// then Agent details (the seat sheet), Compact, Clear context…, Add to queue…, Edit this seat in the spec, and the red
+/// Kill session… and Remove from rig…. The caller says what differs: [onChat] / [onTerminal] open the view in its own way
+/// (the terminal swaps itself for the chat), [fromChat] / [fromTerminal] drop the one it already is, [onDetails] shows the
+/// sheet (null: no row), [extra] are the screen's own rows (Reconnect, Reflow) after Agent details. [onGone] runs after a
+/// kill or remove went through, so a screen showing the seat can leave.
+ActionRows seatMenuRows(BuildContext context, String rigName, Seat s,
+    {Future<void> Function()? onRefresh,
+    VoidCallback? onGone,
+    VoidCallback? onChat,
+    VoidCallback? onTerminal,
+    VoidCallback? onDetails,
+    bool fromChat = false,
+    bool fromTerminal = false,
+    List<ActionRow> extra = const []}) {
   final live = s.sessionName != null && s.state != SeatState.stopped;
   final nav = detailNavigator(context);
+  final refresh = onRefresh ?? () async {};
   return (items: [
-    if (s.isClaude)
+    if (s.isClaude && !fromChat)
       (
         Icons.chat_bubble_outline,
-        'Chat',
+        'Open as chat',
         null,
-        () => nav.push(MaterialPageRoute(builder: (_) => ChatScreen(rigName: rigName, seat: s, asChat: true)))
+        onChat ?? () => nav.push(MaterialPageRoute(builder: (_) => ChatScreen(rigName: rigName, seat: s, asChat: true)))
       ),
-    if (s.sessionName != null)
+    if (s.sessionName != null && !fromTerminal)
       (
         Icons.terminal,
-        'Terminal',
+        'Open as terminal',
         null,
-        () => nav.push(MaterialPageRoute(builder: (_) => TerminalScreen(target: SeatTarget(rigName, s))))
+        onTerminal ?? () => nav.push(MaterialPageRoute(builder: (_) => TerminalScreen(target: SeatTarget(rigName, s))))
       ),
     if (s.isClaude && s.resumeToken != null) (Icons.open_in_new, 'Open in Claude', null, () => openInClaude(context, s)),
-    if (s.isClaude && live) (Icons.compress_outlined, 'Compact', null, () => runSeatAction(context, 'compact', s, onRefresh: onRefresh)),
+    menuBreak,
+    if (onDetails != null) (Icons.info_outline, 'Agent details', null, onDetails),
+    ...extra,
+    if (s.isClaude && live) (Icons.compress_outlined, 'Compact', null, () => runSeatAction(context, 'compact', s, onRefresh: refresh)),
     if (s.isClaude && live)
-      (Icons.cleaning_services_outlined, 'Clear context…', null, () => runSeatAction(context, 'clear', s, onRefresh: onRefresh)),
+      (Icons.cleaning_services_outlined, 'Clear context…', null, () => runSeatAction(context, 'clear', s, onRefresh: refresh)),
     if (canQueue(s))
       (
         Icons.playlist_add,
@@ -144,7 +159,7 @@ ActionRows seatActionRows(BuildContext context, String rigName, Seat s,
         () async {
           final agent = await showAddToQueue(context, seat: s);
           if (agent != null && context.mounted) toast(context, 'Added to $agent\'s queue');
-          await onRefresh();
+          await refresh();
         }
       ),
     if (s.nodeId != null && s.rigId.isNotEmpty)

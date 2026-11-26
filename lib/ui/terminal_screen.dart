@@ -25,7 +25,6 @@ import 'needs_you_banner.dart';
 import 'project_actions.dart' show confirmCloseShell, renameShellLabel;
 import 'needs_you_strip.dart';
 import 'rig/seat_sheet.dart' show showSeatSheet;
-import 'kit.dart';
 import 'status_shape.dart';
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
 import 'action_rows.dart' show showActionRows;
@@ -377,10 +376,10 @@ class _TerminalScreenState extends State<TerminalScreen> {
     final host = AppScope.read(context).active;
     if (target is ProjectShellTarget && host != null) {
       final shell = ProjectShell(projectShellSession(target.path), target.path);
-      await showActionSheet(
+      await showActionRows(
         context,
         host.shellLabel(shell.name),
-        [
+        (items: [
           (Icons.height_outlined, 'Reflow', 'Fit the pane to this window again', _reflow),
           for (final (icon, label, run) in extras) (icon, label, null, run),
           (Icons.folder_outlined, 'Copy path', displayPath(target.path), () => _copyPath(target.path)),
@@ -398,13 +397,13 @@ class _TerminalScreenState extends State<TerminalScreen> {
               if (await confirmCloseShell(context, host, shell) && mounted) Navigator.of(context).pop();
             }
           ),
-        ],
+        ]),
       );
       return;
     }
-    await showActionSheet(context, null, [
+    await showActionRows(context, null, (items: [
       for (final (icon, label, run) in extras) (icon, label, null, run),
-    ]);
+    ], danger: const []));
   }
 
   /// Tells tmux this window's size again (the pane keeps the size of the last window that attached).

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'action_rows.dart' show showActionRows;
 import '../data/git_status.dart';
 import '../data/rig_spec.dart';
 import '../models.dart';
@@ -106,10 +107,10 @@ class _SpecScreenState extends State<SpecScreen> {
             IconButton(
               tooltip: 'Spec options',
               icon: const Icon(Icons.more_horiz),
-              onPressed: () => showActionSheet(context, null, [
+              onPressed: () => showActionRows(context, null, (items: [
                 (Icons.edit_outlined, 'Edit spec', null, valid ? _editSpec : null),
                 (Icons.rocket_launch_outlined, 'Start rig…', null, valid ? _launch : null),
-              ]),
+              ], danger: const [])),
             ),
           ],
           bottom: Segmented<int>(

@@ -1,4 +1,5 @@
 import 'dart:async';
+import '../action_rows.dart' show showActionRows;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../api/openrig_client.dart';
@@ -257,8 +258,8 @@ class _WorktreeScreenState extends State<WorktreeScreen> {
                   IconButton(
                     tooltip: 'Worktree options',
                     icon: const Icon(Icons.more_horiz, size: 22),
-                    onPressed: () => showActionSheet(context, widget.name ?? w.name, const [],
-                        danger: [('Delete worktree…', Icons.delete_outline, _delete)]),
+                    onPressed: () => showActionRows(context, widget.name ?? w.name,
+                        (items: const [], danger: [('Delete worktree…', Icons.delete_outline, _delete)])),
                   ),
               ],
             ),

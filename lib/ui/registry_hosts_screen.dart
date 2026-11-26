@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'action_rows.dart' show showActionRows;
 import 'package:flutter/material.dart';
 
 import '../data/registry_hosts.dart';
@@ -198,13 +199,13 @@ class _RegistryHostsScreenState extends State<RegistryHostsScreen> {
         trailing: IconButton(
           tooltip: '${h.id} actions',
           icon: const Icon(Icons.more_horiz),
-          onPressed: () => showActionSheet(context, h.id, [
+          onPressed: () => showActionRows(context, h.id, (items: [
             if (!h.selected) (Icons.check_circle_outline, 'Make current', null, () => _do(() => _rig.select(h.id))),
             (Icons.health_and_safety_outlined, 'Run doctor', null, () => _doctor(h)),
             (Icons.edit_outlined, 'Edit', null, () => _form(edit: h)),
           ], danger: [
             ('Remove…', Icons.delete_outline, () => _remove(h)),
-          ]),
+          ])),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [

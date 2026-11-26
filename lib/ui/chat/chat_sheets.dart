@@ -224,7 +224,7 @@ extension _ChatSheets on _ChatPageState {
       return;
     }
     // A subagent has nothing to open or kill.
-    await showActionSheet(context, null, [
+    await showActionRows(context, null, (items: [
       if (_seat.sessionName != null && !_subagent)
         (Icons.terminal_outlined, 'Open terminal', 'The seat\'s live pane, for anything the chat can\'t do', _toTerminal),
       if (!_subagent)
@@ -234,7 +234,7 @@ extension _ChatSheets on _ChatPageState {
         if (_seat.sessionName != null) ('Kill session…', Icons.dangerous_outlined, _killSession),
         ('Remove from rig…', Icons.delete_outline, _removeSeat),
       ],
-    ]);
+    ]));
   }
 
   /// The seat's member in the spec its rig was launched from.

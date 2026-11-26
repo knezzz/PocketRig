@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'action_rows.dart' show showActionRows;
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -367,7 +368,7 @@ class _ProjectScreenState extends State<ProjectScreen> with Polling {
       onOpen: () => _push(rigRoute(r.rig, _name, seats: r.seats)),
       onWorktree: () => _startInWorktree(r));
 
-  void _worktreeMenu(Worktree w, bool main, int agents) => showActionSheet(context, main ? 'Main checkout' : w.name, [
+  void _worktreeMenu(Worktree w, bool main, int agents) => showActionRows(context, main ? 'Main checkout' : w.name, (items: [
         (
           Icons.hub_outlined,
           'Start a rig here…',
@@ -379,7 +380,7 @@ class _ProjectScreenState extends State<ProjectScreen> with Polling {
         (Icons.folder_open_outlined, 'Open worktree', w.branch, () => _openWorktree(w)),
       ], danger: [
         if (!main) ('Delete worktree…', Icons.delete_outline, () => _removeWorktree(w)),
-      ]);
+      ]));
 
   /// A section label with a link that jumps to another tab ("All agents ›").
   Widget _labelWithJump(String text, String link, int tab) => Row(children: [

@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'rig/seat_actions.dart' show seatMenuRows;
+import 'action_rows.dart' show showActionRows;
 import 'package:flutter/material.dart';
 
 import 'page_column.dart';
@@ -254,20 +256,27 @@ class _RigScreenState extends State<RigScreen> with Polling {
     _push(seatScreen(_rig.name, s));
   }
 
-  /// A seat's ⋯ (and a long press on the Map): the seat sheet.
-  Future<void> _seatSheet(Seat s) async {
-    await showSeatSheet(context, _rig.name, s,
-        queue: _queue,
-        mode: _modes[_modeKey(s)],
-        onChat: () => _openChat(s),
-        onTerminal: () => _openTerminal(s),
-        onEditSpec: () => _editSpec(s),
-        onRefresh: load);
-    // Its mode may have changed in there.
-    if (!mounted) return;
-    _modes.remove(_modeKey(s));
-    _loadModes();
-  }
+  /// A seat's ⋯ (and a long press on the Map): the agent list (Agent details is the seat sheet).
+  Future<void> _seatSheet(Seat s) => showActionRows(
+      context,
+      s.logicalId,
+      seatMenuRows(context, _rig.name, s,
+          onChat: () => _openChat(s),
+          onTerminal: () => _openTerminal(s),
+          onRefresh: load,
+          onDetails: () async {
+            await showSeatSheet(context, _rig.name, s,
+                queue: _queue,
+                mode: _modes[_modeKey(s)],
+                onChat: () => _openChat(s),
+                onTerminal: () => _openTerminal(s),
+                onEditSpec: () => _editSpec(s),
+                onRefresh: load);
+            // Its mode may have changed in there.
+            if (!mounted) return;
+            _modes.remove(_modeKey(s));
+            _loadModes();
+          }));
 
   /// Opens the visual editor on the spec this rig was launched from (see
   /// [locateRigSpec]), on [s]'s member when given.

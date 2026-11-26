@@ -194,12 +194,15 @@ void main() {
     await close(tester);
   });
 
-  testWidgets('a row’s ⋯ opens the seat sheet; the header ⋯ has the rig’s options', (tester) async {
+  testWidgets('a row’s ⋯ opens the agent list, Agent details the seat sheet; the header ⋯ has the rig’s options', (tester) async {
     await open(tester);
     // The tab bar took room, so the third row sits low: lift it clear of the bottom bar.
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
     await tester.pump();
     await tester.longPress(find.descendant(of: find.byType(AgentRow), matching: find.textContaining('review', findRichText: true)).first);
+    await tester.pumpAndSettle();
+    expect(find.byType(SeatSheetBody), findsNothing, reason: 'the list first');
+    await tester.tap(find.text('Agent details'));
     await tester.pumpAndSettle();
     expect(find.byType(SeatSheetBody), findsOneWidget);
     expect(find.text('Reply…'), findsOneWidget, reason: 'review asked a question');
@@ -229,7 +232,7 @@ void main() {
     await close(tester);
   });
 
-  testWidgets('the Graph tab: a node tap opens the seat like its row, a long press the seat sheet',
+  testWidgets('the Graph tab: a node tap opens the seat like its row, a long press the agent list',
       (tester) async {
     await open(tester, initialTab: 1);
     expect(find.byType(SeatGraph), findsOneWidget);
@@ -245,6 +248,9 @@ void main() {
 
     await open(tester, initialTab: 1);
     await tester.longPress(find.byType(SeatNode).first);
+    await tester.pumpAndSettle();
+    expect(find.text('Agent details'), findsOneWidget, reason: 'the agent list');
+    await tester.tap(find.text('Agent details'));
     await tester.pumpAndSettle();
     expect(find.byType(SeatSheetBody), findsOneWidget);
     expect(find.byType(ChatScreen), findsNothing);

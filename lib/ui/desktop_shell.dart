@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'rig/seat_actions.dart' show seatMenuRows;
 import 'package:flutter/services.dart';
 
 import '../data/agent_jobs.dart' show AgentJob;
@@ -1145,7 +1146,9 @@ class _RigGroup extends StatelessWidget {
             onTap: () => onSeat(s),
             onMore: () {
               useHost(context, host);
-              showSeatSheet(context, r.rig.name, s);
+              // The agent's one ⋯ list, as in its header and its tile; Agent details is the seat sheet.
+              showActionRows(context, s.logicalId,
+                  seatMenuRows(context, r.rig.name, s, onDetails: () => showSeatSheet(context, r.rig.name, s)));
             },
           ),
           ..._subagentRows(context, host, s, depth + 1, () => onSeat(s)),

@@ -37,6 +37,12 @@ void main() {
     for (var i = 0; i < 4; i++) {
       await tester.pump(const Duration(milliseconds: 500));
     }
+    // The agent's list is the same one as the header's and the tile's; Agent details is the seat sheet.
+    expect(find.widgetWithText(MenuItemButton, 'Open as chat'), findsOneWidget);
+    await tester.tap(find.widgetWithText(MenuItemButton, 'Agent details'));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
     final chat = find.widgetWithText(OutlinedButton, 'Chat');
     expect(tester.getCenter(chat).dy, lessThan(800), reason: 'the sheet is up');
     await tester.tap(chat);

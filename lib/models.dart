@@ -916,8 +916,12 @@ class LooseAgent {
   static LooseAgent? fromDiscovery(Map<String, Object?> j) {
     final tmux = _s(j['tmuxSession']);
     if (tmux == null || j['status'] != 'active') return null;
-    final hint = _s(j['runtimeHint']);
-    if (hint != 'claude-code' && hint != 'codex') return null; // shells and unknowns aren't agents
+    final cmd = _s(j['activeCommand']);
+    // Claude Code's process title is its version ('2.1.3'): the daemon leaves such a session 'unknown' when it has no config to
+    // read (a bare home folder), and a host without the watcher's hook has nothing else to say it is an agent.
+    final claudeTitle = _s(j['runtimeHint']) == 'unknown' && cmd != null && RegExp(r'^\d+\.\d+\.\d+$').hasMatch(cmd);
+    final hint = claudeTitle ? 'claude-code' : _s(j['runtimeHint']);
+    if (hint != 'claude-code' && hint != 'codex') return null; // shells and other unknowns aren't agents
     return LooseAgent(
       id: tmux,
       discoveryId: _s(j['id']),
@@ -925,7 +929,7 @@ class LooseAgent {
       cwd: _s(j['cwd']),
       tmuxSession: tmux,
       tmuxPane: _s(j['tmuxPane']),
-      activeCommand: _s(j['activeCommand']),
+      activeCommand: cmd,
       since: RigEvent.parseTime(j['firstSeenAt']),
     );
   }

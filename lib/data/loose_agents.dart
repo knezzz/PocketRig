@@ -62,20 +62,26 @@ List<LooseAgent> mergeLooseAgents(
 /// just shows fewer agents. [scan] asks the daemon to look again first.
 /// [onPartial] is called when a source failed, so a missing agent proves nothing.
 /// [onSubagents] gets every running subagent on the host and [onJobs] every
-/// tmux session's processes, from the same SSH call, and [onShells] the project shells among them.
+/// tmux session's processes, from the same SSH call, and [onShells] the project shells among them. [onDiscovered] gets the
+/// daemon's agents the moment its list is back, before the slower SSH read (the hook file, tmux's processes) has finished, so a
+/// first load does not wait on it to show them.
 Future<List<LooseAgent>> loadLooseAgents(Host host, OpenRigClient api, List<RigWithSeats> rigs,
     {bool scan = false,
     void Function()? onPartial,
     void Function(List<Subagent>)? onSubagents,
     void Function(Map<String, List<AgentJob>>)? onJobs,
-    void Function(List<ProjectShell>)? onShells}) async {
+    void Function(List<ProjectShell>)? onShells,
+    void Function(List<LooseAgent>)? onDiscovered}) async {
   final managed = {
     for (final r in rigs)
       for (final s in r.seats)
         if (s.sessionName != null) s.sessionName!,
   };
   final results = await Future.wait([
-    api.discovered(scan: scan).catchError((Object _) {
+    api.discovered(scan: scan).then((found) {
+      onDiscovered?.call(mergeLooseAgents(found, const [], managed, labels: host.agentNames));
+      return found;
+    }).catchError((Object _) {
       onPartial?.call();
       return <LooseAgent>[];
     }),

@@ -66,6 +66,65 @@ void main() {
     expect(tab.toSeat().needsInput, isFalse, reason: 'no tmux, nothing to press the key into');
   });
 
+  test('the daemon\'s agents are handed over before the slow SSH read finishes, so a first load does not wait on it', () async {
+    final store = await installFakes();
+    showLoose = true;
+    addTearDown(() => showLoose = false);
+    final gate = Completer<void>();
+    SshExec.debugConnect = (h) async {
+      await gate.future;
+      return SshExec.fake(fakeShell);
+    };
+    addTearDown(() => SshExec.debugConnect = null);
+    final host = store.active!;
+    final early = <String>[];
+    final done = loadLooseAgents(host, OpenRigClient.factory(host), const [], onDiscovered: (l) => early.addAll(l.map((a) => a.name)));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(early, unorderedEquals(['scratch', 'codex-fix']), reason: 'the scan\'s agents, while SSH is still pending');
+    var finished = false;
+    unawaited(done.then((_) => finished = true));
+    await Future<void>.delayed(const Duration(milliseconds: 50));
+    expect(finished, isFalse, reason: 'the full list waits for SSH');
+    gate.complete();
+    final all = await done;
+    expect(all.map((a) => a.name), containsAll(['scratch', 'codex-fix']));
+  });
+
+  test('a loose agent in a subfolder, a worktree or behind a trailing slash files under its project, in one rule for rigs and agents', () {
+    final rigs = rigsWithSeatsFromFixture();
+    final root = groupIntoProjects(rigs, const []).firstWhere((p) => p.rigs.isNotEmpty).path;
+    final agents = [
+      for (final (id, cwd) in [
+        ('sub', '$root/lib/src'),
+        ('wt', '$root/.claude/worktrees/feat-x'),
+        ('wt-sub', '$root/.claude/worktrees/feat-x/lib'),
+        ('slash', '$root/'),
+        ('same', root),
+      ])
+        LooseAgent(id: id, cwd: cwd),
+    ];
+    final projects = groupIntoProjects(rigs, const [], agents);
+    final p = projects.firstWhere((p) => p.path == root);
+    expect(p.loose.map((a) => a.id), unorderedEquals(['sub', 'wt', 'wt-sub', 'slash', 'same']));
+    expect(projects.where((q) => q.loose.isNotEmpty), [p], reason: 'no project of its own for any of them');
+    expect(byWorktree(p).map((g) => g.$1), containsAll([null, 'feat-x']), reason: 'the worktree one is told apart, under the same project');
+  });
+
+  test('a session the daemon calls unknown is still an agent when its process title is a Claude Code version, hook or no hook', () {
+    Map<String, Object?> row(String hint, String cmd) => {
+          'id': 'd-x', 'tmuxSession': 'claude-home-1a2b', 'status': 'active', 'cwd': '/Users/me', 'runtimeHint': hint, 'activeCommand': cmd,
+        };
+    expect(LooseAgent.fromDiscovery(row('unknown', '2.1.332'))?.runtime, 'claude-code', reason: 'a version title is Claude Code');
+    expect(LooseAgent.fromDiscovery(row('unknown', 'zsh')), isNull, reason: 'a shell is not an agent');
+    expect(LooseAgent.fromDiscovery(row('unknown', 'node')), isNull);
+    expect(LooseAgent.fromDiscovery(row('shell', '2.1.332')), isNull, reason: 'only an unknown one is reclassified');
+    // Without the hook file it still joins the folder it runs in (a home folder takes only its own agents).
+    final a = LooseAgent.fromDiscovery(row('unknown', '2.1.332'))!;
+    final projects = groupIntoProjects(const [], const [], [a, LooseAgent(id: 'b', cwd: '/Users/me/code/app')]);
+    expect(projects.map((p) => p.path).toSet(), {'/Users/me', '/Users/me/code/app'});
+    expect(projects.firstWhere((p) => p.path == '/Users/me').loose.single.id, 'claude-home-1a2b');
+  });
+
   test('loose agents join the project of their folder', () {
     final agents = mergeLooseAgents(
         discovered.map(LooseAgent.fromDiscovery).whereType<LooseAgent>().toList(), parseHookFile(looseHookFile), {});

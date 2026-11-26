@@ -392,7 +392,17 @@ class HostFeed extends ChangeNotifier {
       var jobsNow = jobs;
       var shellsNow = shells;
       final found = await loadLooseAgents(host, client, rigs,
-          scan: scan, onPartial: () => complete = false, onSubagents: (l) => subs = Subagent.bySession(l), onJobs: (j) => jobsNow = j, onShells: (l) => shellsNow = l);
+          scan: scan,
+          onPartial: () => complete = false,
+          onSubagents: (l) => subs = Subagent.bySession(l),
+          onJobs: (j) => jobsNow = j,
+          onShells: (l) => shellsNow = l,
+          // The first load shows the daemon's agents at once; the hook file and tmux's answer follow and replace them.
+          onDiscovered: (l) {
+            if (!current() || loose.isNotEmpty || l.isEmpty) return;
+            loose = l;
+            _notify();
+          });
       chatCache?.prune(host.id, rigs, complete ? found : null).catchError((Object e) {
         logWarning('chat cache: $e');
       });

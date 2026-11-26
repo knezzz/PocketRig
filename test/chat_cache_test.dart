@@ -17,6 +17,14 @@ import 'golden/fixtures.dart';
 ChatCache memory({int chat = 1000000, int total = 1000000}) =>
     ChatCache(NativeDatabase.memory(), maxChatBytes: chat, maxTotalBytes: total);
 
+/// A cache whose media list is a plain empty stream: the phone chat's panels strip watches it, and drift's live query leaves
+/// timers that a widget test's clock can't drain.
+class _QuietMedia extends ChatCache {
+  _QuietMedia() : super(NativeDatabase.memory(), maxChatBytes: 1000000, maxTotalBytes: 1000000);
+  @override
+  Stream<List<RigMedia>> watchChatMedia(String hostId, String key) => Stream.value(const []);
+}
+
 String use(String id, Map<String, Object?> input, {String name = 'Read'}) => jsonEncode({
       'type': 'assistant',
       'uuid': 'u$id',
@@ -270,7 +278,7 @@ void main() {
   group('opening a chat', () {
     late ChatCache cache;
     setUp(() async {
-      cache = memory();
+      cache = _QuietMedia();
       chatCache = cache;
     });
     tearDown(() async {

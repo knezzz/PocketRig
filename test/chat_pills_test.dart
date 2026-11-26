@@ -119,8 +119,11 @@ void main() {
     final store = await installFakes();
     isDesktop = true;
     addTearDown(() => isDesktop = false);
+    // A Mac window: the chat has a dock beside it now (320 of the width), so a phone's 390 is no window for it.
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(MaterialApp(
-        home: phone(store, ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true))));
+        home: phone(store, ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true), width: 1400, height: 900)));
     await _settle(tester);
     expect(find.text(permissionKeysHint), findsOneWidget);
     await tester.sendKeyEvent(LogicalKeyboardKey.escape);

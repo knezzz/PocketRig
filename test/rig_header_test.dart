@@ -4,7 +4,6 @@ import 'package:pocket_rig/ui/rig/rig_room.dart' show RigRoomScreen, RemindersSc
 import 'package:pocket_rig/data/host_store.dart' show isDesktop;
 import 'package:pocket_rig/ui/kit.dart' show KillBar, PageHeader;
 import 'package:pocket_rig/ui/rig/overview_tab.dart' show RigBody;
-import 'package:pocket_rig/ui/chat/rig_chat_pager.dart' show RigChatPager;
 import 'package:pocket_rig/ui/rig_screen.dart';
 import 'package:pocket_rig/ui/tiles_screen.dart' show TilesScreen;
 import 'package:pocket_rig/ui/app_icon.dart';
@@ -85,14 +84,15 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('on the Mac the rig header has a Chat | Tiles | Rig switch; Tiles shows the tiles, whose own switch brings the page back',
+  testWidgets('on the Mac the rig header has a List | Tiles switch; Tiles shows the tiles, whose own switch brings the page back',
       (tester) async {
     isDesktop = true;
     addTearDown(() => isDesktop = false);
     await _open(tester, const Size(1280, 800));
     final onPage = find.descendant(of: find.byType(RigScreen), matching: find.text('Tiles'));
     expect(onPage, findsOneWidget);
-    expect(find.descendant(of: find.byType(RigScreen), matching: find.text('Rig')), findsOneWidget, reason: 'one switch, Rig on show');
+    expect(find.descendant(of: find.byType(RigScreen), matching: find.text('List')), findsOneWidget, reason: 'one switch, List on show');
+    expect(find.descendant(of: find.byType(RigScreen), matching: find.text('Chat')), findsNothing, reason: 'Chat is reached per agent');
     expect(find.descendant(of: find.byType(RigScreen), matching: find.text('Rig details')), findsNothing);
     expect(tester.getTopLeft(onPage).dx, greaterThan(tester.getTopLeft(find.widgetWithText(OutlinedButton, 'Reminders')).dx),
         reason: 'right after Reminders');
@@ -108,7 +108,7 @@ void main() {
     expect(find.descendant(of: tiles, matching: find.text('0%')), findsNothing);
     expect(find.descendant(of: tiles, matching: find.bySemanticsLabel('context 62 percent used')), findsOneWidget);
     expect(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')), findsNothing);
-    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig')));
+    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('List')));
     for (var i = 0; i < 10; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
@@ -116,7 +116,7 @@ void main() {
     await _close(tester);
   });
 
-  testWidgets('Chat | Tiles | Rig: from each of the three the other two are one click away, and they replace each other (Back leaves the rig)',
+  testWidgets('List | Tiles: each is one click from the other, and they replace each other (Back leaves the rig)',
       (tester) async {
     isDesktop = true;
     addTearDown(() => isDesktop = false);
@@ -145,13 +145,11 @@ void main() {
       expect(on(from), findsNothing, reason: 'replaced, not stacked');
     }
 
-    await go(RigScreen, 'Chat', RigChatPager);
-    await go(RigChatPager, 'Tiles', TilesScreen);
-    await go(TilesScreen, 'Chat', RigChatPager);
-    await go(RigChatPager, 'Rig', RigScreen);
     await go(RigScreen, 'Tiles', TilesScreen);
-    await go(TilesScreen, 'Rig', RigScreen);
-    expect(depth.routes, before, reason: 'six switches added no route: one Back leaves the rig');
+    await go(TilesScreen, 'List', RigScreen);
+    await go(RigScreen, 'Tiles', TilesScreen);
+    await go(TilesScreen, 'List', RigScreen);
+    expect(depth.routes, before, reason: 'four switches added no route: one Back leaves the rig');
     await _close(tester);
   });
 

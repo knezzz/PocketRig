@@ -1,16 +1,11 @@
 import 'package:flutter/material.dart';
 
-import '../../data/fleet.dart' show fleet;
 import '../../data/git_status.dart';
-import '../../data/host_store.dart' show isDesktop;
-import '../../main.dart' show AppScope;
 import '../../models.dart';
 import '../../terminal/transport.dart';
 import '../chat_screen.dart';
 import '../agent_view_switch.dart';
 import '../needs_you_banner.dart';
-import '../project_actions.dart' show projectNameOf;
-import '../rig/rig_header.dart' show RigMode, RigViewSwitch;
 import '../terminal_screen.dart';
 import '../theme.dart';
 import 'chat_header.dart';
@@ -130,9 +125,6 @@ class _RigChatPagerState extends State<RigChatPager> {
     final pages = _pages;
     final info = _header.value?.seatId == _selected ? _header.value : null;
     final git = info?.git;
-    // The Mac: this rig's Chat | Tiles | Rig, from the host's feed (a stopped rig has no tiles).
-    final host = AppScope.of(context).active;
-    final r = host == null ? null : fleet.feedFor(host).rigs.where((r) => r.rig.id == widget.seat.rigId).firstOrNull;
     return Scaffold(
       body: Column(children: [
         chatAgentHeader(
@@ -144,10 +136,6 @@ class _RigChatPagerState extends State<RigChatPager> {
           onSwitch: () => _toTerminal(_pages.firstWhere((s) => s.logicalId == _selected)),
           git: git,
           onGit: (g) => showGitSheet(context, g),
-          extraActions: [
-            if (isDesktop && r != null && r.rig.status != 'stopped')
-              RigViewSwitch(current: RigMode.chat, rig: r, projectName: projectNameOf(r.primaryCwd ?? r.rig.name)),
-          ],
           tabs: _tabs.length > 1 ? SeatSwitcher(seats: _tabs, selected: _selected, onTap: _tapTab) : null,
         ),
         Expanded(

@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../app_icon.dart';
+import '../../models.dart';
+import '../chat_screen.dart' show ChatScreen;
 import '../kit.dart' show Segmented;
+import '../rig_screen.dart' show RigScreen;
+import '../tiles_screen.dart' show TilesScreen;
 import '../theme.dart';
 
 /// The rig page's actions: New (filled), Message all, Room, Reminders. A null callback greys that one out.
@@ -92,23 +96,43 @@ List<Widget> rigHeaderButtons(BuildContext context, RigActionSet actions) {
   ];
 }
 
-/// List | Tiles, in the rig's header on the Mac: the view on show is [tiles]; the other segment calls [onChange], which
-/// puts the other screen in this one's place.
+/// The three ways to see a rig on the Mac: its paged chat, its agents as live terminals, its page.
+enum RigMode { chat, tiles, rig }
+
+/// The rig's Claude agent the Chat view opens on: the first running one (null: the rig has no chat to show).
+Seat? rigChatSeat(List<Seat> seats) => seats.where((s) => s.isClaude && s.sessionName != null && s.state != SeatState.stopped).firstOrNull;
+
+/// Chat | Tiles | Rig, in the header of each of the three on the Mac: [current] is on show; another segment puts that screen
+/// in this one's place (replaced, not pushed), so Back from any of them leaves the rig. Chat is left out for a rig with no
+/// running Claude agent.
 class RigViewSwitch extends StatelessWidget {
-  const RigViewSwitch({super.key, required this.tiles, required this.onChange});
-  final bool tiles;
-  final VoidCallback onChange;
+  const RigViewSwitch({super.key, required this.current, required this.rig, required this.projectName});
+  final RigMode current;
+  final RigWithSeats rig;
+  final String projectName;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: Segmented<bool>(
-          compact: true,
-          values: const [false, true],
-          labels: const ['List', 'Tiles'],
-          selected: tiles,
-          onChanged: (t) => t == tiles ? null : onChange(),
-          semanticLabel: 'Rig view',
-        ),
-      );
+  Widget build(BuildContext context) {
+    final chat = rigChatSeat(rig.seats);
+    final views = [if (chat != null) RigMode.chat, RigMode.tiles, RigMode.rig];
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Segmented<RigMode>(
+        compact: true,
+        values: views,
+        labels: [for (final v in views) switch (v) { RigMode.chat => 'Chat', RigMode.tiles => 'Tiles', RigMode.rig => 'Rig' }],
+        selected: current,
+        onChanged: (v) {
+          if (v == current) return;
+          Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
+              builder: (_) => switch (v) {
+                    RigMode.chat => ChatScreen(rigName: rig.rig.name, seat: chat!, asChat: true),
+                    RigMode.tiles => TilesScreen(rig: rig.rig, seats: rig.seats, projectName: projectName),
+                    RigMode.rig => RigScreen(rig: rig.rig, projectName: projectName),
+                  }));
+        },
+        semanticLabel: 'Rig view',
+      ),
+    );
+  }
 }

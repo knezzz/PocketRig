@@ -20,6 +20,7 @@ Widget chatAgentHeader(
   required GitStatus? git,
   required void Function(GitStatus git) onGit,
   Widget? tabs,
+  List<Widget> extraActions = const [],
 }) {
   final repo = git != null && git.isRepo ? git : null;
   return AgentHeader(
@@ -32,6 +33,7 @@ Widget chatAgentHeader(
     showing: AgentView.chat,
     views: agentViews(seat),
     onSwitch: onSwitch,
+    extraActions: extraActions,
     bottom: repo == null && tabs == null
         ? null
         : Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [

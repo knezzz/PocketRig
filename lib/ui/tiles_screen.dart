@@ -20,7 +20,7 @@ import 'agent_panels.dart' show AgentMediaCounts, AgentPanelDock, AgentPanelsTog
 import 'common.dart' show toast;
 import 'chat_screen.dart' show seatScreen;
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
-import 'rig/rig_header.dart' show RigViewSwitch;
+import 'rig/rig_header.dart' show RigMode, RigViewSwitch;
 import 'rig_screen.dart' show RigScreen;
 import 'kit.dart' show PageHeader;
 import 'progress_bar.dart' show ContextBar;
@@ -170,12 +170,8 @@ class _TilesScreenState extends State<TilesScreen> with SingleTickerProviderStat
           actions: [
             // The enlarged tile is the agent's full terminal: it gets the panel dock too.
             if (enlarged >= 0) const AgentPanelsToggle(),
-            // The rig's page takes this screen's place.
-            RigViewSwitch(
-              tiles: true,
-              onChange: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
-                  builder: (_) => RigScreen(rig: widget.rig, projectName: widget.projectName, tiles: true))),
-            ),
+            // The rig's chat or page takes this screen's place.
+            RigViewSwitch(current: RigMode.tiles, rig: RigWithSeats(widget.rig, _seats), projectName: widget.projectName),
           ],
         ),
         Expanded(

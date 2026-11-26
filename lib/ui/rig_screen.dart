@@ -13,7 +13,6 @@ import '../ssh/ssh_exec.dart';
 import '../terminal/transport.dart';
 import 'app_icon.dart';
 import 'busy.dart';
-import 'tiles_screen.dart' show TilesScreen;
 import 'worktree_chip.dart';
 import 'chat_screen.dart';
 import 'common.dart';
@@ -298,11 +297,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
         if (wide) ...rigHeaderButtons(context, actions),
         // The Mac only: every running agent of the rig as a live terminal.
         if (isDesktop && !stopped)
-          RigViewSwitch(
-            tiles: false,
-            onChange: () => Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
-                builder: (_) => TilesScreen(rig: _rig, seats: _seats, projectName: widget.projectName))),
-          ),
+          RigViewSwitch(current: RigMode.rig, rig: RigWithSeats(_rig, _seats), projectName: widget.projectName),
         IconButton(
           tooltip: 'Rig options',
           icon: const Icon(Icons.more_horiz),

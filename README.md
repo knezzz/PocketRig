@@ -6,12 +6,18 @@ A small phone app for [OpenRig](https://github.com/mvschwarz/openrig): your rigs
 
 ## Screenshots
 
-Rendered from the golden tests with fake data (dark on the right of each pair).
+Rendered from the golden tests with fake data. Light on the left, dark on the right.
 
-| | |
-|---|---|
-| ![Inbox](docs/screenshots/4_inbox.png) | ![Seat chat](docs/screenshots/3a_seat_chat.png) |
-| ![Seat terminal](docs/screenshots/3b_seat_terminal.png) | ![Rig work](docs/screenshots/2a_rig_overview.png) |
+<table>
+<tr>
+<td><img src="docs/screenshots/4_inbox.png" alt="Inbox"></td>
+<td><img src="docs/screenshots/3a_seat_chat.png" alt="Seat chat"></td>
+</tr>
+<tr>
+<td><img src="docs/screenshots/3b_seat_terminal.png" alt="Seat terminal"></td>
+<td><img src="docs/screenshots/2a_rig_overview.png" alt="Rig work"></td>
+</tr>
+</table>
 
 ![Wide layout](docs/screenshots/1c_rigs_home_wide.png)
 

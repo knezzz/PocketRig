@@ -503,7 +503,9 @@ class _RigsHomeState extends State<RigsHome> {
         );
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: DecoratedBox(
+      // A Container, not a DecoratedBox: it insets its child by the border, so the rows' own fills don't paint over it.
+      child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: k.surface,
           border: Border.all(color: needsYou ? k.accent.withValues(alpha: 0.6) : k.border),
@@ -630,7 +632,8 @@ class _RigsHomeState extends State<RigsHome> {
     ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
-      child: DecoratedBox(
+      child: Container(
+        clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(color: k.surface, border: Border.all(color: k.border), borderRadius: BorderRadius.circular(kRadius)),
         child: Column(children: [
           for (var i = 0; i < rows.length; i++) ...[

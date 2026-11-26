@@ -31,7 +31,11 @@ void main() {
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(RigsHome), findsOneWidget);
     final macHeader = find.descendant(of: find.byType(RigsHome), matching: find.text('MACBOOK'));
-    await tester.scrollUntilVisible(macHeader, 200, scrollable: find.descendant(of: find.byType(RigsHome), matching: find.byType(Scrollable)).first);
+    final list = find.descendant(of: find.byType(RigsHome), matching: find.byType(Scrollable)).first;
+    await tester.scrollUntilVisible(macHeader, 200, scrollable: list);
+    // It stops at the viewport's edge, where a tap misses: bring it well inside.
+    await tester.drag(list, const Offset(0, -120));
+    await tester.pump();
     await tester.tap(macHeader);
     await tester.pump();
     await tester.pump(const Duration(seconds: 1));

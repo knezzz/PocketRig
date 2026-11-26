@@ -36,4 +36,27 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('a card\'s rows sit inside its border: the card\'s outline is not painted over', (tester) async {
+    final store = await installFakes();
+    showLoose = true;
+    AppShell.debugStartOnInbox = false;
+    tester.view.physicalSize = const Size(390, 3200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(MaterialApp(home: phone(store, const RigsHome())));
+    for (var i = 0; i < 8; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    final rows = find.descendant(of: find.byType(RigsHome), matching: find.byType(AgentRow));
+    expect(rows, findsWidgets);
+    for (final e in rows.evaluate()) {
+      final row = tester.getRect(find.byWidget(e.widget));
+      final card = tester.getRect(find.ancestor(of: find.byWidget(e.widget), matching: find.byWidgetPredicate((w) => w is Container && w.clipBehavior == Clip.antiAlias)).first);
+      expect(row.left, card.left + 1, reason: 'a row starts inside the left border');
+      expect(row.right, card.right - 1, reason: 'and ends inside the right border');
+    }
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
 }

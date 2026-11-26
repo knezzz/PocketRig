@@ -153,7 +153,7 @@ class Tokens extends ThemeExtension<Tokens> {
     headerFill: Color(0xFF2F343E),
     accent: Color(0xFFD9915B),
     onAccent: Color(0xFF282C33),
-    kill: Color(0xFFD07277),
+    kill: Color(0xFFD67A7F),
     onInk: Color(0xFF282C33),
     termBg: Color(0xFF21252B),
     termFg: Color(0xFFE6E6E6),
@@ -290,6 +290,9 @@ ThemeData buildTheme(Tokens k, Brightness b) {
         visualDensity: VisualDensity.standard,
         backgroundColor: k.ink,
         foregroundColor: k.onInk,
+        // M3's disabled look (the ink at 38% on 12%) is under 2:1 in the dark theme: muted on the fill reads, and is not ink.
+        disabledBackgroundColor: k.fill,
+        disabledForegroundColor: k.muted,
         minimumSize: const Size(44, 44),
         shape: rounded,
         textStyle: s(13, FontWeight.w600),
@@ -299,6 +302,7 @@ ThemeData buildTheme(Tokens k, Brightness b) {
       style: OutlinedButton.styleFrom(
         visualDensity: VisualDensity.standard,
         foregroundColor: k.ink,
+        disabledForegroundColor: k.muted,
         minimumSize: const Size(44, 44),
         side: BorderSide(color: k.border),
         shape: rounded,
@@ -307,7 +311,7 @@ ThemeData buildTheme(Tokens k, Brightness b) {
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-          visualDensity: VisualDensity.standard, foregroundColor: k.ink, minimumSize: const Size(44, 44), textStyle: s(13, FontWeight.w500)),
+          visualDensity: VisualDensity.standard, foregroundColor: k.ink, disabledForegroundColor: k.muted, minimumSize: const Size(44, 44), textStyle: s(13, FontWeight.w500)),
     ),
     iconButtonTheme:
         IconButtonThemeData(style: IconButton.styleFrom(foregroundColor: k.ink, minimumSize: const Size(44, 44))),

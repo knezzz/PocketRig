@@ -219,7 +219,10 @@ class _HostStateTileState extends State<HostStateTile> {
               Switch(value: h.enabled, onChanged: (on) async {
                 await setHostEnabled(context, h, on);
                 if (mounted) setState(() {});
-              }),
+              })
+            else if (widget.onSelect != null)
+              // This Mac has no switch (it can't be turned off here): keep its slot, so Retry ends where it does on every row.
+              const Visibility(visible: false, maintainSize: true, maintainAnimation: true, maintainState: true, child: Switch(value: false, onChanged: null)),
           ]),
         ),
       ),

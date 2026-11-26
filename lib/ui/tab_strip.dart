@@ -12,6 +12,7 @@ class TabStrip<T> extends StatelessWidget {
     required this.selected,
     required this.onChanged,
     this.semanticLabel,
+    this.flush = false,
   });
 
   final List<T> values;
@@ -19,6 +20,9 @@ class TabStrip<T> extends StatelessWidget {
   final T selected;
   final ValueChanged<T> onChanged;
   final String? semanticLabel;
+
+  /// The first tab has no padding before its label, so the label (and its underline) start at the page's margin.
+  final bool flush;
 
   static const height = 40.0;
 
@@ -33,14 +37,14 @@ class TabStrip<T> extends StatelessWidget {
         child: SizedBox(
           height: height,
           child: ListView(scrollDirection: Axis.horizontal, children: [
-            for (var i = 0; i < values.length; i++) _tab(k, labels[i], values[i] == selected, () => onChanged(values[i])),
+            for (var i = 0; i < values.length; i++) _tab(k, labels[i], values[i] == selected, () => onChanged(values[i]), flush: flush && i == 0),
           ]),
         ),
       ),
     );
   }
 
-  Widget _tab(Tokens k, String label, bool on, VoidCallback tap) => Semantics(
+  Widget _tab(Tokens k, String label, bool on, VoidCallback tap, {bool flush = false}) => Semantics(
         selected: on,
         button: true,
         inMutuallyExclusiveGroup: true,
@@ -52,7 +56,7 @@ class TabStrip<T> extends StatelessWidget {
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 120),
             curve: kEaseOut,
-            padding: const EdgeInsets.symmetric(horizontal: 14),
+            padding: EdgeInsets.only(left: flush ? 0 : 14, right: 14),
             alignment: Alignment.center,
             decoration: BoxDecoration(border: Border(bottom: BorderSide(color: on ? k.ink : Colors.transparent, width: 2))),
             child: Text(label,

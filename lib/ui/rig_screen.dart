@@ -322,6 +322,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
           selected: tab,
           onChanged: (t) => setState(() => _tab = t),
           semanticLabel: 'Rig views',
+          flush: true,
         ),
       ]),
     );

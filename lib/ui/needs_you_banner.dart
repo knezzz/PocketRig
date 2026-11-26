@@ -308,7 +308,8 @@ class _BannerCardState extends State<_BannerCard> {
                       onTap: openInboxFromBanner,
                       child: SizedBox(
                         height: 32,
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        // Hugs the left, like the rows above.
+                        child: Row(children: [
                           Text('+$more more waiting', style: TextStyle(fontSize: 12, color: k.muted)),
                           const SizedBox(width: 6),
                           const Text('Inbox',

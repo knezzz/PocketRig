@@ -14,6 +14,7 @@ import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/terminal/transport.dart';
 import 'package:pocket_rig/ui/agent_panels.dart' show AgentPanelDock, AgentPanelsToggle, PanelPreviewHost;
 import 'package:pocket_rig/ui/agent_panels_sheet.dart' show PanelsStrip;
+import 'package:pocket_rig/ui/desktop_menu.dart' show trackMenuAnchor;
 import 'package:pocket_rig/ui/status_shape.dart';
 import 'package:pocket_rig/ui/theme.dart' show Tokens, animateStatusSpinners;
 import 'package:pocket_rig/ui/tiles_screen.dart';
@@ -377,9 +378,16 @@ void main() {
     expect(find.byType(BottomSheet), findsNothing, reason: 'no sheet');
 
     expect(find.byTooltip(RegExp('Actions for ')), findsWidgets, reason: 'a ⋯ on each tile');
+    trackMenuAnchor();
+    final button = tester.getRect(find.byTooltip(RegExp('Actions for ')).first);
     await tester.tap(find.byTooltip(RegExp('Actions for ')).first);
     await tester.pumpAndSettle();
     expect(find.widgetWithText(MenuItemButton, 'Open as terminal'), findsOneWidget);
+    // Under the tile's ⋯, not at the window's top left (the popup is 220 wide with a 4dp padding and the border inside).
+    final item = tester.getRect(find.byType(MenuItemButton).first);
+    expect(item.top - 5, closeTo(button.bottom + 4, 2), reason: 'just under the button');
+    final onLeft = (item.left - 5 - button.left).abs() <= 2, onRight = (item.right + 5 - button.right).abs() <= 2;
+    expect(onLeft || onRight, isTrue, reason: 'the menu\'s left or right edge is the button\'s ($item under $button)');
     expect(find.widgetWithText(MenuItemButton, 'Agent details'), findsOneWidget);
     expect(find.widgetWithText(MenuItemButton, 'Reconnect'), findsOneWidget);
     await tester.pumpWidget(const SizedBox());

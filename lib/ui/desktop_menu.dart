@@ -35,8 +35,10 @@ void trackMenuAnchor() {
     for (final entry in hit.path) {
       final t = entry.target;
       if (t is RenderBox && t.hasSize && t.size.width <= 48 && t.size.height <= 48) {
-        // The path runs inside out: the last small box is the button, not the icon in it.
-        _button = t.localToGlobal(Offset.zero) & t.size;
+        // The path runs inside out: the last small box is the button, not the icon in it. It must hold the pointer: an
+        // ancestor can be tiny and its child overflow it (the tiles' flip), and that is not the button.
+        final box = t.localToGlobal(Offset.zero) & t.size;
+        if (box.inflate(1).contains(e.position)) _button = box;
       }
     }
   });

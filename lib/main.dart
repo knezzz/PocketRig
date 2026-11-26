@@ -36,7 +36,6 @@ Future<void> main() async {
   await store.load();
   await loadAppearance();
   await loadDebugOverlay();
-  trackMenuAnchor();
   await loadOpenAgentsOn();
   await loadAgentPanels();
   persistHostKeys = store.save;
@@ -113,6 +112,8 @@ class _PocketRigAppState extends State<PocketRigApp> {
   @override
   void initState() {
     super.initState();
+    // Here, not in main(): the demo build has its own main, and its first menu would open at the window's top left.
+    trackMenuAnchor();
     if (Platform.isIOS || Platform.isAndroid) _push;
   }
 

@@ -24,7 +24,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(store.active!.rigNames, {'conveyor': 'Billing'});
-    expect(find.text('Billing'), findsOneWidget);
+    // The title is the renamed label (and ' · host' with several hosts, as the fixtures have).
+    expect(find.text('Billing · ${store.active!.name}'), findsOneWidget);
     expect(find.textContaining('app · conveyor'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox());

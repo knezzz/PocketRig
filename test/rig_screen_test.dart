@@ -8,7 +8,7 @@ import 'package:pocket_rig/main.dart';
 import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/ui/chat_screen.dart';
 import 'package:pocket_rig/ui/common.dart' show ErrorBanner;
-import 'package:pocket_rig/ui/kit.dart' show AgentRow;
+import 'package:pocket_rig/ui/kit.dart' show AgentRow, PageHeader;
 import 'package:pocket_rig/ui/permission_sheet.dart';
 import 'package:pocket_rig/ui/rig/rig_chat.dart';
 import 'package:pocket_rig/ui/rig/seat_graph.dart';
@@ -32,6 +32,9 @@ class _Spy extends http.BaseClient {
     return inner.send(request);
   }
 }
+
+/// The rig's name in the page header (' · host' follows it with several hosts).
+final title = find.descendant(of: find.byType(PageHeader), matching: find.textContaining('conveyor'));
 
 void main() {
   setUp(() => animateStatusSpinners = false);
@@ -93,7 +96,7 @@ void main() {
   testWidgets('five tabs on a running rig (Agents, Graph, Work, Code, Progress), four on a stopped one (no Graph): Agents lists every seat unfiltered, with Work and Activity under them; Work, Code and Progress hold the rest', (tester) async {
     final handle = tester.ensureSemantics();
     await open(tester);
-    expect(find.text('conveyor'), findsOneWidget);
+    expect(title, findsOneWidget, reason: 'the rig\'s name (and its host) in the header');
     expect(find.textContaining('auto every 15m', findRichText: true), findsNothing, reason: 'the header keeps one short line');
     final tabs = find.byWidgetPredicate((w) => w.runtimeType.toString().startsWith('TabStrip<'));
     for (final t in ['Agents', 'Graph', 'Work 4', 'Code', 'Progress']) {
@@ -114,12 +117,12 @@ void main() {
     }
 
     // Switching tabs doesn't move the header text.
-    final title = tester.getTopLeft(find.text('conveyor'));
+    final titleAt = tester.getTopLeft(title);
     // Work is a tab of its own (and the first few items sit under the agents, with the activity).
     final list = find.byType(Scrollable).first;
     await tester.scrollUntilVisible(find.text('WORK · 4 OPEN'), 200, scrollable: list);
     await tab(tester, 'Work 4');
-    expect(tester.getTopLeft(find.text('conveyor')), title, reason: 'the header stays put');
+    expect(tester.getTopLeft(title), titleAt, reason: 'the header stays put');
     expect(find.text('lead', findRichText: true), findsNothing, reason: 'the seats are on the Agents tab');
     expect(find.text('WORK · 4 OPEN'), findsOneWidget);
     expect(find.text('Queue & handoffs'), findsOneWidget);
@@ -137,7 +140,7 @@ void main() {
     expect(find.text('#42 Retry 409s with backoff'), findsOneWidget);
     // Progress is its own tab.
     await tab(tester, 'Progress');
-    expect(tester.getTopLeft(find.text('conveyor')), title, reason: 'the header stays put');
+    expect(tester.getTopLeft(title), titleAt, reason: 'the header stays put');
     expect(find.text('Fix the flaky queue-sweep test'), findsOneWidget, reason: 'the slices are on the Progress tab');
     // The checklist's wording for a screen reader tells under way from not started.
     expect(find.bySemanticsLabel(RegExp('Implement it in the router: in progress')), findsOneWidget);
@@ -184,12 +187,12 @@ void main() {
     final message = tester.widget<ErrorBanner>(find.byType(ErrorBanner)).message;
     // The Progress tab may add its own banner for the slices it couldn't read; the rig's is the same on every tab.
     final banner = find.byWidgetPredicate((w) => w is ErrorBanner && w.message == message);
-    final title = tester.getTopLeft(find.text('conveyor'));
+    final titleAt = tester.getTopLeft(title);
     for (final t in ['Work', 'Code', 'Progress', 'Agents']) {
       await tab(tester, t);
       // Progress may add the same message for its own failed read.
       expect(banner, t == 'Progress' ? findsWidgets : findsOneWidget, reason: '$t tab');
-      expect(tester.getTopLeft(find.text('conveyor')), title, reason: 'the header stays put on $t');
+      expect(tester.getTopLeft(title), titleAt, reason: 'the header stays put on $t');
     }
     await close(tester);
   });

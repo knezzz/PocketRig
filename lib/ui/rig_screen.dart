@@ -304,7 +304,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
     final header = PageHeader(
       // The rig, in the colour of its worst state.
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, withSeats, host)),
-      title: rigTitle(context, _rig, widget.projectName),
+      title: rigTitle(context, _rig),
       actions: rigBarActions(context,
           rig: _rig,
           seats: _seats,

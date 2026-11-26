@@ -87,7 +87,7 @@ void main() {
       expect(find.widgetWithText(OutlinedButton, a).evaluate().length + find.widgetWithText(FilledButton, a).evaluate().length, 1, reason: a);
     }
     expect(find.widgetWithText(FilledButton, 'New'), findsOneWidget, reason: 'New is the filled one');
-    final title = tester.getTopLeft(find.textContaining('app / ')).dy;
+    final title = tester.getTopLeft(find.descendant(of: find.byType(PageHeader), matching: find.textContaining('conveyor')).first).dy;
     expect(tester.getTopLeft(find.widgetWithText(FilledButton, 'New')).dy, lessThan(title + 40), reason: 'in the bar, level with the title');
     // The line under the title runs across the page: it is its own row, not squeezed beside the buttons.
     expect(tester.getTopLeft(find.text('4 agents')).dy, greaterThan(title + 20), reason: 'a row under the title');

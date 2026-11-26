@@ -77,12 +77,12 @@ List<Widget> rigBarActions(
   ];
 }
 
-/// The rig's title, the same in every view: 'app / conveyor', and ' · host' when there is more than one host.
-String rigTitle(BuildContext context, Rig rig, String projectName) {
+/// The rig's title, the same in every view (v3): its name, and ' · host' when there is more than one host.
+String rigTitle(BuildContext context, Rig rig) {
   final store = AppScope.of(context);
   final host = store.active;
   final host1 = store.hosts.length > 1 && host != null ? ' · ${host.name}' : '';
-  return '$projectName / ${host?.rigLabel(rig.name) ?? rig.name}$host1';
+  return '${host?.rigLabel(rig.name) ?? rig.name}$host1';
 }
 
 /// The rig's header above an agent's chat on the Mac: the page's own header (the same PageHeader, so the same height, the same x
@@ -102,7 +102,7 @@ class RigBar extends StatelessWidget {
     final host = AppScope.of(context).active;
     return PageHeader(
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, RigWithSeats(rig, seats), host)),
-      title: rigTitle(context, rig, projectName),
+      title: rigTitle(context, rig),
       showBack: showBack,
       actions: rigBarActions(context,
           rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),

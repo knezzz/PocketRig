@@ -359,7 +359,7 @@ void main() {
     expect(cols(resizes.last), greaterThan(small), reason: 'the enlarged tile reflows the window to its size, less the dock');
     expect(find.byType(AgentPanelDock), findsOneWidget, reason: 'the enlarged tile has the full terminal\'s panels');
     expect(find.byType(AgentPanelsToggle), findsOneWidget);
-    expect(find.textContaining('app / '), findsOneWidget, reason: 'enlarged, the project and rig stay in sight');
+    expect(find.textContaining('app › '), findsOneWidget, reason: 'enlarged, the project and rig stay in sight (the agent row\'s line)');
     await tester.pump(const Duration(milliseconds: 400));
     await doubleClick();
     expect(find.byType(TerminalView), findsNWidgets(n));

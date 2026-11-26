@@ -224,7 +224,7 @@ void main() {
     expect(weight('attacker'), FontWeight.w600, reason: 'the enlarged agent is marked');
     expect(weight('adversarial-review'), FontWeight.w600, reason: 'its rig, on the path');
 
-    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('List')));
+    await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')));
     await tester.pump(const Duration(seconds: 1));
     expect(find.byType(RigScreen), findsOneWidget);
     await tester.pumpWidget(const SizedBox());

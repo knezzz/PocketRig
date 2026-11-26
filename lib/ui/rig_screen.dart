@@ -297,7 +297,10 @@ class _RigScreenState extends State<RigScreen> with Polling {
         if (wide) ...rigHeaderButtons(context, actions),
         // The Mac only: every running agent of the rig as a live terminal.
         if (isDesktop && !stopped)
-          RigViewSwitch(current: RigMode.rig, rig: RigWithSeats(_rig, _seats), projectName: widget.projectName),
+          ...[
+            RigTilesButton(rig: RigWithSeats(_rig, _seats), projectName: widget.projectName),
+            RigDetailsButton(rig: _rig, projectName: widget.projectName, selected: true),
+          ],
         IconButton(
           tooltip: 'Rig options',
           icon: const Icon(Icons.more_horiz),

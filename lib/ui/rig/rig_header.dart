@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../app_icon.dart';
 import '../../models.dart';
-import '../kit.dart' show Segmented;
+
 import '../rig_screen.dart' show RigScreen;
 import '../tiles_screen.dart' show TilesScreen;
 import '../theme.dart';
@@ -95,34 +95,66 @@ List<Widget> rigHeaderButtons(BuildContext context, RigActionSet actions) {
   ];
 }
 
-/// The two ways to see a rig on the Mac: its page (List) and its agents as live terminals (Tiles). An agent's chat is
-/// reached per agent.
-enum RigMode { tiles, rig }
+/// 'Rig details' in a rig view's header on the Mac: opens the rig's page (Agents, Messages, Progress, Code) in this view's place
+/// (replaced, not pushed, so Back leaves the rig). On the rig page itself it is [selected]: shown, and nothing to press.
+class RigDetailsButton extends StatelessWidget {
+  const RigDetailsButton({super.key, required this.rig, required this.projectName, this.selected = false});
+  final Rig rig;
+  final String projectName;
+  final bool selected;
 
-/// List | Tiles, in the header of each of the two on the Mac: [current] is on show; the other segment puts that screen in
-/// this one's place (replaced, not pushed), so Back from either leaves the rig.
-class RigViewSwitch extends StatelessWidget {
-  const RigViewSwitch({super.key, required this.current, required this.rig, required this.projectName});
-  final RigMode current;
+  @override
+  Widget build(BuildContext context) => _RigViewButton(
+      label: 'Rig details',
+      icon: Icons.info_outline,
+      selected: selected,
+      onPressed: () => Navigator.of(context)
+          .pushReplacement(MaterialPageRoute<void>(builder: (_) => RigScreen(rig: rig, projectName: projectName))));
+}
+
+/// 'Tiles' in the rig page's header on the Mac: the rig's agents as live terminals, in the page's place (Back leaves the rig).
+class RigTilesButton extends StatelessWidget {
+  const RigTilesButton({super.key, required this.rig, required this.projectName});
   final RigWithSeats rig;
   final String projectName;
 
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(right: 8),
-        child: Segmented<RigMode>(
-          compact: true,
-          values: RigMode.values.reversed.toList(),
-          labels: const ['List', 'Tiles'],
-          selected: current,
-          onChanged: (v) {
-            if (v == current) return;
-            Navigator.of(context).pushReplacement(MaterialPageRoute<void>(
-                builder: (_) => v == RigMode.tiles
-                    ? TilesScreen(rig: rig.rig, seats: rig.seats, projectName: projectName)
-                    : RigScreen(rig: rig.rig, projectName: projectName)));
-          },
-          semanticLabel: 'Rig view',
+  Widget build(BuildContext context) => _RigViewButton(
+      label: 'Tiles',
+      icon: Icons.grid_view,
+      onPressed: () => Navigator.of(context).pushReplacement(
+          MaterialPageRoute<void>(builder: (_) => TilesScreen(rig: rig.rig, seats: rig.seats, projectName: projectName))));
+}
+
+class _RigViewButton extends StatelessWidget {
+  const _RigViewButton({required this.label, required this.icon, required this.onPressed, this.selected = false});
+  final String label;
+  final IconData icon;
+  final VoidCallback onPressed;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final k = Tokens.of(context);
+    final style = OutlinedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      textStyle: const TextStyle(fontFamily: fontSans, fontSize: 13, fontWeight: FontWeight.w600),
+      backgroundColor: selected ? k.fill : null,
+    ).merge(compactAction);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Semantics(
+        selected: selected,
+        child: OutlinedButton(
+          onPressed: selected ? null : onPressed,
+          style: style.copyWith(side: WidgetStatePropertyAll(BorderSide(color: selected ? k.ink : k.border))),
+          child: Row(mainAxisSize: MainAxisSize.min, children: [
+            Icon(icon, size: 16),
+            const SizedBox(width: 6),
+            Text(label),
+          ]),
         ),
-      );
+      ),
+    );
+  }
 }

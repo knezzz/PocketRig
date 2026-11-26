@@ -26,4 +26,25 @@ void main() {
     await tester.pumpWidget(const SizedBox());
     await tester.pump(const Duration(seconds: 5));
   });
+
+  testWidgets('the sidebar seat sheet\'s Chat opens in the main area, the sidebar stays (as a click does)', (tester) async {
+    final store = await installFakes();
+    await pumpDesktop(tester, store);
+    for (var i = 0; i < 5 && find.text('app').evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(seconds: 1));
+    }
+    await tester.tap(find.byTooltip('Actions for attacker'));
+    for (var i = 0; i < 4; i++) {
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+    final chat = find.widgetWithText(OutlinedButton, 'Chat');
+    expect(tester.getCenter(chat).dy, lessThan(800), reason: 'the sheet is up');
+    await tester.tap(chat);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(const Duration(seconds: 1));
+    expect(find.byType(ChatPage), findsWidgets);
+    expect(find.text('Add project folder'), findsWidgets, reason: 'the sidebar is still there: a page in the content panel');
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(seconds: 5));
+  });
 }

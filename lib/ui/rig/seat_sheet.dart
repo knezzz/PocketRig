@@ -4,7 +4,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../desktop_shell.dart' show detailNavigator;
+import '../desktop_shell.dart' show DetailPane, detailNavigator;
 import '../../data/agent_jobs.dart';
 import '../../data/fleet.dart';
 import '../../data/git_status.dart';
@@ -69,13 +69,17 @@ Future<void> showSeatSheet(
   VoidCallback? onEditSpec,
   VoidCallback? onGone,
   Future<void> Function()? onRefresh,
-}) =>
-    showModalBottomSheet<void>(
+}) {
+  // The sheet is a route of the root navigator, outside the desktop shell's detail pane: without this its Chat and
+  // Terminal (detailNavigator) opened a full-window page, the sidebar gone, not in the main area as a click does.
+  final pane = context.getInheritedWidgetOfExactType<DetailPane>();
+  return showModalBottomSheet<void>(
       context: context,
       showDragHandle: true,
       isScrollControlled: true,
       useSafeArea: true,
-      builder: (_) => DraggableScrollableSheet(
+      builder: (_) {
+        final sheet = DraggableScrollableSheet(
         expand: false,
         initialChildSize: 0.85,
         minChildSize: 0.4,
@@ -99,8 +103,11 @@ Future<void> showSeatSheet(
           controller: scroll,
           inSheet: true,
         ),
-      ),
+      );
+        return pane == null ? sheet : DetailPane(nav: pane.nav, child: sheet);
+      },
     );
+}
 
 /// The running subagents, as the shells sheet is: scrollable and short of full height, so the scrim and handle stay
 /// reachable however many there are. [onOpen] runs after the sheet closes.

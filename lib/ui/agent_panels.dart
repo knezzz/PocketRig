@@ -213,17 +213,30 @@ class PanelPreviewHost extends StatefulWidget {
 
 class _PanelPreviewHostState extends State<PanelPreviewHost> {
   WidgetBuilder? _page;
-  int _opened = 0;
+  GlobalKey<NavigatorState>? _nav;
+
+  @override
+  void didUpdateWidget(PanelPreviewHost old) {
+    super.didUpdateWidget(old);
+    // The dock went (a tile shrank): so does what it opened.
+    if (widget.seat == null) _page = null;
+  }
 
   void _open(WidgetBuilder page) => setState(() {
         _page = page;
-        _opened++;
+        _nav = GlobalKey<NavigatorState>();
       });
 
   @override
   Widget build(BuildContext context) {
     final page = _page;
-    return _PreviewScope(
+    // Back (the header's, the shell's) closes the preview first: only a bare host lets the screen go.
+    return PopScope(
+      canPop: page == null,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _nav?.currentState?.maybePop();
+      },
+      child: _PreviewScope(
       open: _open,
       child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         Expanded(
@@ -237,9 +250,10 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
             if (page != null)
               Positioned.fill(
                 child: Navigator(
-                  key: ValueKey(_opened),
+                  key: _nav,
                   observers: [
                     _BaseObserver(() {
+                      if (!mounted) return;
                       setState(() => _page = null);
                       // After the child is back in the focus tree (ExcludeFocus off), not before.
                       WidgetsBinding.instance.addPostFrameCallback((_) => widget.focus?.requestFocus());
@@ -255,7 +269,7 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
         ),
         if (widget.seat != null) AgentPanelDock(seat: widget.seat!),
       ]),
-    );
+    ));
   }
 }
 

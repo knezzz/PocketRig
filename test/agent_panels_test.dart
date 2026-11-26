@@ -4,11 +4,14 @@ import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pocket_rig/data/chat_cache.dart';
+import 'package:pocket_rig/models.dart' show Seat;
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/agent_panels.dart';
 import 'package:pocket_rig/ui/agent_view_switch.dart';
 import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer;
+import 'package:pocket_rig/main.dart' show AppScope;
 import 'package:pocket_rig/ui/chat/media_view.dart' show MediaViewer;
+import 'package:pocket_rig/ui/theme.dart' show Tokens, buildTheme;
 
 import 'golden/fixtures.dart';
 
@@ -210,6 +213,52 @@ void main() {
         expect(focus.hasFocus, isTrue, reason: 'typing goes on without a click');
         expect(tester.state(find.byType(_Live)), same(live), reason: 'the same live child, not a rebuilt one');
       }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
+    testWidgets('Back with a preview open closes only the preview; the screen goes on the next Back; a preview does not outlive its dock',
+        (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final seat = seatFromFixture('r-conveyor', 'lead');
+      await pump(tester, PanelPreviewHost(seat: seat, child: const _Live())); // sets up the cache
+      // A real route under a real navigator (the pump's pages ignore a pop), as the screen is on the Mac.
+      final store = AppScope.of(tester.element(find.byType(PanelPreviewHost)));
+      await tester.pumpWidget(AppScope(
+          store: store,
+          child: MaterialApp(theme: buildTheme(Tokens.light, Brightness.light), home: const SizedBox())));
+      final nav = tester.state<NavigatorState>(find.byType(Navigator));
+      nav.push(MaterialPageRoute<void>(builder: (_) => Scaffold(body: PanelPreviewHost(seat: seat, child: const _Live()))));
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      await tester.tap(find.text('Files 1'));
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('c.dart'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ArtifactViewer), findsOneWidget);
+      await nav.maybePop();
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.pump();
+      expect(find.byType(ArtifactViewer), findsNothing, reason: 'Back closed the preview');
+      expect(find.byType(PanelPreviewHost), findsOneWidget, reason: 'and kept the screen');
+      await nav.maybePop();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byType(PanelPreviewHost), findsNothing, reason: 'the next Back leaves the screen');
+
+      // A tile that shrinks loses its dock, and the preview with it.
+      Widget host(Seat? s) => MaterialApp(home: phone(store, Scaffold(body: PanelPreviewHost(seat: s, child: const _Live()))));
+      await tester.pumpWidget(host(seat));
+      await tester.pump();
+      await tester.tap(find.text('Files 1'));
+      await tester.pump();
+      await tester.tap(find.text('c.dart'));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ArtifactViewer), findsOneWidget);
+      await tester.pumpWidget(host(null));
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(ArtifactViewer), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
     });
 

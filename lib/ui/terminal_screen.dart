@@ -491,24 +491,26 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 onKeyEvent: shiftEnterNewline(_input),
               ),
             );
-            return view;
+            return Stack(children: [Positioned.fill(child: view),
+              // Scrolled back into tmux's history: the way back to the live output (typing does it too). In the child, so
+              // it goes with the terminal when a dock preview covers it.
+              Positioned(
+                right: 8,
+                bottom: 8,
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: _scroll.inCopyMode,
+                  builder: (context, back, _) => !back
+                      ? const SizedBox.shrink()
+                      : FilledButton.icon(
+                          onPressed: _scroll.toLive,
+                          icon: const Icon(Icons.arrow_downward, size: 18),
+                          label: const Text('Back to live'),
+                        ),
+                ),
+              ),
+            ]);
           }),
           ),
-          ),
-          // Scrolled back into tmux's history: the way back to the live output (typing does it too).
-          Positioned(
-            right: 8,
-            bottom: 8,
-            child: ValueListenableBuilder<bool>(
-              valueListenable: _scroll.inCopyMode,
-              builder: (context, back, _) => !back
-                  ? const SizedBox.shrink()
-                  : FilledButton.icon(
-                      onPressed: _scroll.toLive,
-                      icon: const Icon(Icons.arrow_downward, size: 18),
-                      label: const Text('Back to live'),
-                    ),
-            ),
           ),
           // A long press selects a word (xterm); the menu is what to do with the selection.
           if (!isDesktop && _selection.selection != null)

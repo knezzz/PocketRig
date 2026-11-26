@@ -140,28 +140,27 @@ void main() {
     }
 
     // The same fixed row on every rig view: the same six controls, in this order, the same widths.
-    List<double> row() {
-      final xs = <double>[];
-      final widths = <double>[];
+    List<Rect> row() {
+      final rects = <Rect>[];
       for (final label in ['New', 'Message all', 'Room', 'Reminders', 'Rig details']) {
         final f = find.widgetWithText(OutlinedButton, label).evaluate().isNotEmpty
             ? find.widgetWithText(OutlinedButton, label)
             : find.widgetWithText(FilledButton, label);
         expect(f, findsOneWidget, reason: label);
-        xs.add(tester.getTopLeft(f).dx);
-        widths.add(tester.getSize(f).width);
+        rects.add(tester.getRect(f));
       }
       expect(find.byTooltip('Rig options'), findsOneWidget);
-      xs.add(tester.getTopLeft(find.byTooltip('Rig options')).dx);
+      rects.add(tester.getRect(find.byTooltip('Rig options')));
+      final xs = [for (final r in rects) r.left];
       expect([...xs]..sort(), xs, reason: 'left to right in that order');
-      return widths;
+      return rects;
     }
 
     final onPage = row();
     await tester.tap(find.descendant(of: find.byType(RigScreen), matching: find.text('Rig details')));
     await settle();
     expect(find.byType(TilesScreen), findsOneWidget);
-    expect(row(), onPage, reason: 'the tiles have the same row');
+    expect(row(), onPage, reason: 'the tiles have the same row: every control at the same x and y');
     await tester.tap(find.descendant(of: find.byType(TilesScreen), matching: find.text('Rig details')));
     await settle();
     expect(find.byType(RigScreen), findsOneWidget);
@@ -170,7 +169,7 @@ void main() {
     Navigator.of(tester.element(find.byType(RigScreen))).pushReplacement(
         MaterialPageRoute<void>(builder: (_) => ChatScreen(rigName: 'conveyor', seat: lead, asChat: true)));
     await settle();
-    expect(row(), onPage, reason: 'the chat has the same row');
+    expect(row(), onPage, reason: 'the chat has the same row: every control at the same x and y, the ⋯ at the same right edge');
     await go(RigChatPager, 'Rig details', RigScreen); // from the chat: the rig's page, in a host
     expect(depth.routes, before, reason: 'the switches added no route: one Back leaves the rig');
     await _close(tester);

@@ -123,6 +123,7 @@ class PageHeader extends StatelessWidget {
     this.compact = false,
     this.back,
     this.inColumn = false,
+    this.showBack = true,
   });
 
   final String title;
@@ -144,6 +145,9 @@ class PageHeader extends StatelessWidget {
   /// Overrides the back button; null shows it when the route can pop.
   final VoidCallback? back;
 
+  /// False where another header on the screen already has the Back (the rig's header over an agent's).
+  final bool showBack;
+
   /// The header's content (title, tabs) sits in the same [pageColumnWidth] column as the page body under it, on a wide
   /// window; the bar and its line stay full width. For pages whose body is a [PageColumn].
   final bool inColumn;
@@ -154,7 +158,7 @@ class PageHeader extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     // A page the Mac's sidebar opened (a panel root) has no back arrow, even over a route that stayed for unsaved edits.
     final panelRoot = isDesktop && ModalRoute.of(context)?.settings.name == panelRouteName;
-    final canPop = back != null || (!large && !panelRoot && Navigator.of(context).canPop());
+    final canPop = showBack && (back != null || (!large && !panelRoot && Navigator.of(context).canPop()));
     final menu = canPop ? null : context.dependOnInheritedWidgetOfExactType<ShellMenu>();
     final titleStyle = large ? t.displaySmall : (compact ? t.titleMedium : t.headlineSmall);
     // No status bar above (a desktop window): the header keeps off the window's top edge by 8dp more.

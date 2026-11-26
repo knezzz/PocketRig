@@ -5,6 +5,9 @@ import '../action_rows.dart';
 import '../app_icon.dart';
 import '../new_session_sheet.dart' show startAgentInFolder;
 import '../rig_screen.dart' show RigScreen;
+import '../../main.dart' show AppScope;
+import '../kit.dart' show PageHeader;
+import '../project_tally.dart' show rigIconColor;
 import '../theme.dart';
 import 'rig_actions.dart';
 import 'rig_header.dart';
@@ -60,7 +63,8 @@ List<Widget> rigBarActions(
   ];
 }
 
-/// The rig's bar above an agent's chat on the Mac: the rig's icon and name, then the same fixed row as the rig's page and tiles.
+/// The rig's header above an agent's chat on the Mac: the page's own header (the same PageHeader, so the same height, the same x
+/// and y for every button, the ⋯ at the right edge), without a Back (the agent's header under it has it).
 class RigBar extends StatelessWidget {
   const RigBar({super.key, required this.rig, required this.seats, required this.projectName});
   final Rig rig;
@@ -70,21 +74,13 @@ class RigBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
-    return Material(
-      color: k.ground,
-      child: Container(
-        height: 44,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(border: Border(bottom: BorderSide(color: k.border))),
-        child: Row(children: [
-          AppIcon(AppIconKind.rig, size: 18, color: k.accent),
-          const SizedBox(width: 8),
-          Flexible(child: Text(rig.name, style: Theme.of(context).textTheme.titleSmall, maxLines: 1, overflow: TextOverflow.ellipsis)),
-          const Spacer(),
-          ...rigBarActions(context,
-              rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),
-        ]),
-      ),
+    final host = AppScope.of(context).active;
+    return PageHeader(
+      titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, RigWithSeats(rig, seats), host)),
+      title: host?.rigLabel(rig.name) ?? rig.name,
+      showBack: false,
+      actions: rigBarActions(context,
+          rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),
     );
   }
 }

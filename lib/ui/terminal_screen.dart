@@ -456,6 +456,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
           child: PanelPreviewHost(
           seat: isDesktop && target is SeatTarget ? target.seat : null,
           focus: _focus,
+          headerBack: Navigator.of(context).canPop(), // AgentHeader's rule
           child: Builder(builder: (context) {
             const pad = 2.0;
             const size = 12.0;

@@ -15,6 +15,7 @@ import 'chat/diff_view.dart';
 import 'common.dart';
 import 'kit.dart';
 import 'theme.dart';
+import 'web_backdrop.dart';
 
 /// A file on the host, read-only: Markdown rendered, code highlighted, HTML
 /// in a WebView. Read fresh over SSH (at most 256 KB). Rendered · Source ·
@@ -136,8 +137,6 @@ class _ArtifactViewerState extends State<ArtifactViewer> {
         if (artifactKind(widget.path) == ArtifactKind.html) {
           final dark = Tokens.of(context).isDark;
           _web = WebViewController()
-            // The sheet behind a page that sets no background of its own is the app's, not white.
-            ..setBackgroundColor(Tokens.of(context).ground)
             // Agent-written pages may need JS, but they must not navigate.
             ..setJavaScriptMode(JavaScriptMode.unrestricted)
             ..setNavigationDelegate(NavigationDelegate(
@@ -146,6 +145,8 @@ class _ArtifactViewerState extends State<ArtifactViewer> {
                   : NavigationDecision.navigate,
             ))
             ..loadHtmlString(dark ? withDarkScheme(text) : text);
+          // Where the page sets no background: the app's, not white (not on macOS: see setWebBackdrop).
+          setWebBackdrop(_web!, Tokens.of(context).ground);
         }
       });
     } catch (e) {

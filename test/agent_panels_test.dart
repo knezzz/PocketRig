@@ -313,6 +313,41 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('the screen says whether its header has a Back: when it says no the preview keeps one arrow even where the route can pop',
+        (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final seat = seatFromFixture('r-conveyor', 'lead');
+      await pump(tester, PanelPreviewHost(seat: seat, child: const _Live())); // sets up the cache
+      final store = AppScope.of(tester.element(find.byType(PanelPreviewHost)));
+      Future<void> open(bool headerBack) async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpWidget(AppScope(
+            store: store,
+            child: MaterialApp(
+                theme: buildTheme(Tokens.light, Brightness.light),
+                // A route under the screen: the navigator can pop (as in the Mac's shell).
+                home: const SizedBox())));
+        final nav = tester.state<NavigatorState>(find.byType(Navigator));
+        nav.push(MaterialPageRoute<void>(
+            builder: (_) => Scaffold(body: PanelPreviewHost(seat: seat, headerBack: headerBack, child: const _Live()))));
+        await tester.pump();
+        await tester.pump(const Duration(seconds: 1));
+        await tester.tap(find.text('Files 1'));
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.tap(find.text('c.dart'));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(ArtifactViewer), findsOneWidget);
+      }
+
+      await open(false);
+      expect(find.byTooltip('Back'), findsOneWidget, reason: 'its header has none: the preview\'s arrow is the only one');
+      await open(true);
+      expect(find.byTooltip('Back'), findsNothing, reason: 'its header has one');
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('the dock is tabs: Info first, then Files, Images and Artifacts with their counts; it drags wider and hides',
         (tester) async {
       tester.view.physicalSize = const Size(1000, 2000);

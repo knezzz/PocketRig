@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../web_backdrop.dart';
+
 import '../kit.dart' show Panel;
 import '../theme.dart';
 
@@ -68,7 +70,6 @@ class _MermaidViewState extends State<MermaidView> {
     _dark = dark;
     _ctrl = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
-      ..setBackgroundColor(Colors.transparent)
       ..addJavaScriptChannel('Size', onMessageReceived: (m) {
         final h = double.tryParse(m.message);
         if (h != null && mounted) {
@@ -85,6 +86,7 @@ class _MermaidViewState extends State<MermaidView> {
             : NavigationDecision.prevent,
       ))
       ..loadHtmlString(mermaidHtml(widget.source, dark: dark, k: Tokens.of(context)));
+    setWebBackdrop(_ctrl!, Colors.transparent);
   }
 
   @override

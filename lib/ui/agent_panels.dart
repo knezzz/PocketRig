@@ -192,12 +192,16 @@ class PanelEmpty extends StatelessWidget {
 /// [child], still mounted (so a terminal keeps its connection and scroll). The preview is a small navigator of its own, so a
 /// diff opened from a file stays in the main area too; Back from the first page closes it. [seat] null: no dock.
 class PanelPreviewHost extends StatefulWidget {
-  const PanelPreviewHost({super.key, required this.child, required this.seat, this.focus});
+  const PanelPreviewHost({super.key, required this.child, required this.seat, this.focus, this.headerBack});
   final Widget child;
   final Seat? seat;
 
   /// The child's focus (the terminal's): taken back when the preview closes, so typing goes on without a click.
   final FocusNode? focus;
+
+  /// Whether the screen's header above shows a Back (it closes the preview). Each header decides that by its own rule
+  /// (AgentHeader: the route can pop; PageHeader: and it is not the panel's root), so the screen says; null: PageHeader's.
+  final bool? headerBack;
 
   /// Opens [page] in the main area of the nearest host, or on the navigator when there is none (a phone's sheet).
   static void open(BuildContext context, WidgetBuilder page) {
@@ -251,7 +255,8 @@ class _PanelPreviewHostState extends State<PanelPreviewHost> {
     final page = _page;
     // The screen's header has a Back of its own (it closes the preview, below): then the preview shows none, one arrow in all.
     // Without one the preview keeps its own, or it could not be closed.
-    final headerBack = Navigator.of(context).canPop() && !(isDesktop && ModalRoute.of(context)?.settings.name == panelRouteName);
+    final headerBack = widget.headerBack ??
+        (Navigator.of(context).canPop() && !(isDesktop && ModalRoute.of(context)?.settings.name == panelRouteName));
     // Back (the header's, the shell's) closes the preview first: only a bare host lets the screen go.
     return PopScope(
       canPop: page == null,

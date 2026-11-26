@@ -158,7 +158,12 @@ Future<String> _demoScan(String cmd) async {
 ///
 /// [variant] 'empty': This Mac only, with no rigs and no agents at all (the "Nothing is running" screen); 'stopped': This
 /// Mac only, whose one rig is stopped (which must read "Nothing is running" too).
+/// The demo's own keychain service: whatever reads the keychain in the demo (the secure storage is the in-memory mock) can
+/// never reach the real app's items, which is what makes macOS ask the person for permission.
+const demoKeychainService = 'flutter_secure_storage_service_demo';
+
 Future<HostStore> demoSetup({String variant = ''}) async {
+  HostStore.keychainService = demoKeychainService;
   final store = await installFakes();
   AppShell.debugStartOnInbox = false; // the app's own first screen
   if (variant.isEmpty) {

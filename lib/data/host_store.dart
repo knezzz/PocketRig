@@ -15,21 +15,22 @@ import 'chat_cache.dart';
 /// Off under `flutter test`, which also runs on macOS; tests turn it on themselves.
 bool isDesktop = !kIsWeb && Platform.isMacOS && !Platform.environment.containsKey('FLUTTER_TEST');
 
-const _demoBuild = bool.fromEnvironment('POCKETRIG_DEMO');
-
-/// The macOS keychain options. The legacy keychain needs no signing team, so local macOS builds can save hosts. The demo build
-/// (scripts/demo-build.sh) keeps to its own service name: a read of another app's item is what makes macOS ask the person for
-/// permission ("wants to use your confidential information"), and the real app's items are under the default one. The demo
-/// replaces the storage with an in-memory one anyway; this keeps a read that gets past that from reaching the real items.
+/// The macOS keychain options. The legacy keychain needs no signing team, so local macOS builds can save hosts. [service] is the
+/// keychain service the items go under: the plugin's default for the app (saved hosts stay where they are). A build that must
+/// never touch the real app's items (the design demo) sets [HostStore.keychainService] before it builds its store: macOS asks
+/// the person for permission when an app reads another app's item.
 @visibleForTesting
-MacOsOptions hostStoreMacOptions({bool demo = _demoBuild}) => MacOsOptions(
-    useDataProtectionKeyChain: false, accountName: demo ? 'flutter_secure_storage_service_demo' : AppleOptions.defaultAccountName);
+MacOsOptions hostStoreMacOptions({String? service}) =>
+    MacOsOptions(useDataProtectionKeyChain: false, accountName: service ?? HostStore.keychainService);
 
 /// Hosts, including their SSH keys, live in the platform keychain/keystore.
 class HostStore extends ChangeNotifier {
   HostStore({FlutterSecureStorage? storage}) : _storage = storage ?? FlutterSecureStorage(mOptions: hostStoreMacOptions());
 
   final FlutterSecureStorage _storage;
+
+  /// The keychain service the next [HostStore] (without a storage of its own) saves under.
+  static String keychainService = AppleOptions.defaultAccountName;
   static const _key = 'pocketrig.hosts.v1';
   static const _activeKey = 'pocketrig.activeHost.v1';
   static const _sidebarKey = 'pocketrig.sidebarWidth.v1';

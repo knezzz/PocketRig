@@ -7,16 +7,19 @@ import 'package:pocket_rig/data/host_store.dart';
 import 'package:pocket_rig/main.dart' show PocketRigApp;
 import 'package:pocket_rig/ui/chat_screen.dart';
 
+import '../tool/demo/main_demo.dart' show demoKeychainService, demoSetup;
 import 'golden/fixtures.dart';
 
 /// The demo build must never ask the person for the keychain: it runs on the in-memory storage (installFakes), and if a
 /// read ever got past that it would still be under a service name of its own, never the real app's.
 void main() {
-  test('the demo build keeps to its own keychain service; the real app keeps the default one', () {
-    final demo = hostStoreMacOptions(demo: true).toMap()['accountName'];
-    final real = hostStoreMacOptions(demo: false).toMap()['accountName'];
-    expect(real, AppleOptions.defaultAccountName, reason: 'the real app\'s saved hosts stay where they are');
-    expect(demo, isNot(real));
+  tearDown(() => HostStore.keychainService = AppleOptions.defaultAccountName);
+
+  test('the demo keeps to its own keychain service; the real app keeps the default one', () async {
+    expect(hostStoreMacOptions().toMap()['accountName'], AppleOptions.defaultAccountName, reason: 'the real app\'s saved hosts stay where they are');
+    await demoSetup();
+    expect(hostStoreMacOptions().toMap()['accountName'], demoKeychainService);
+    expect(demoKeychainService, isNot(AppleOptions.defaultAccountName));
   });
 
   testWidgets('with the demo\'s fakes installed, the app and its chat leave the secure storage on the in-memory one', (tester) async {

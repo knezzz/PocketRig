@@ -16,7 +16,7 @@ import '../terminal/tmux_scroll.dart';
 import '../terminal/links.dart';
 import '../terminal/transport.dart';
 import 'rig/seat_sheet.dart' show showSeatSheet;
-import 'agent_panels.dart' show AgentMediaCounts, AgentPanelDock, AgentPanelsToggle;
+import 'agent_panels.dart' show AgentMediaCounts, AgentPanelsToggle, PanelPreviewHost;
 import 'common.dart' show toast;
 import 'chat_screen.dart' show seatScreen;
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
@@ -339,8 +339,7 @@ class _TileState extends State<_Tile> {
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
     // The dock sits outside the tile's Listener: clicks in it don't count toward a double click.
-    return Row(children: [
-      Expanded(child: Listener(
+    return PanelPreviewHost(seat: widget.big ? widget.seat : null, child: Listener(
       onPointerDown: _down,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -429,9 +428,7 @@ class _TileState extends State<_Tile> {
           ]),
         ),
       ),
-      )),
-      if (widget.big) AgentPanelDock(seat: widget.seat),
-    ]);
+      ));
   }
 }
 

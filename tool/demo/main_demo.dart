@@ -34,6 +34,8 @@ import 'package:pocket_rig/ui/needs_you_banner.dart' show inboxRequests;
 import 'package:pocket_rig/ui/new_sheet.dart' show showNew;
 import 'package:pocket_rig/ui/rig_screen.dart' show RigScreen;
 import 'package:pocket_rig/ui/terminal_screen.dart' show TerminalScreen;
+import 'package:drift/native.dart' show NativeDatabase;
+import 'package:pocket_rig/data/chat_cache.dart' show ChatCache, RigMedia, chatCache, chatKey;
 import 'package:pocket_rig/ui/agent_panels_sheet.dart' show showPanelsSheet;
 import 'package:pocket_rig/ui/chat_screen.dart' show ChatScreen;
 import 'package:pocket_rig/data/git_status.dart' show Worktree;
@@ -160,6 +162,8 @@ Future<HostStore> demoSetup({String variant = ''}) async {
   AppShell.debugStartOnInbox = false; // the app's own first screen
   if (variant.isEmpty) {
     _moreFixtures();
+    // The Mac dock of conveyor's lead has something to open (a file edit, a page, a note, an image): click one to see it in the main area.
+    chatCache = _DemoMedia(chatKey(seatFromFixture('r-conveyor', 'lead')));
     SshExec.debugConnect = (h) async => SshExec.fake(_demoScan);
     // conveyor's graph with every link kind: the two the fixtures have (hands off to, reviewed by) and the five that have
     // their own look (delegates, collaborates, observes, escalates, spawned).
@@ -424,3 +428,19 @@ const _glyphLines = [
   '┌──────┐ ┏━━━━┓ ╔════╗',
   '└──────┘ ┗━━━━┛ ╚════╝',
 ];
+
+/// The dock's lists for conveyor's lead, as a plain stream (no database behind it).
+class _DemoMedia extends ChatCache {
+  _DemoMedia(this.key) : super(NativeDatabase.memory());
+  final String key;
+  @override
+  Stream<List<RigMedia>> watchChatMedia(String hostId, String chatKey) {
+    final now = DateTime.now();
+    return Stream.value([
+      RigMedia('file', '$app/src/rig/router.ts', null, now, key),
+      RigMedia('file', '$app/docs/retry-design.md', null, now, key),
+      RigMedia('file', '$app/reports/test-report.html', null, now, key),
+      RigMedia('image', '$app/docs/retry-flow.png', null, now, key),
+    ]);
+  }
+}

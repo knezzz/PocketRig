@@ -185,6 +185,88 @@ class PanelEmpty extends StatelessWidget {
       Padding(padding: const EdgeInsets.all(12), child: Text(text, style: TextStyle(fontSize: dense ? 12 : 13, color: Tokens.of(context).muted)));
 }
 
+/// The agent's main area (its terminal) with the dock beside it. A dock item (artifact, file, image) opens as a preview in the
+/// place of [child], not as a screen over the whole window: the dock stays open, and closing the preview brings back the same
+/// [child], still mounted (so a terminal keeps its connection and scroll). The preview is a small navigator of its own, so a
+/// diff opened from a file stays in the main area too; Back from the first page closes it. [seat] null: no dock.
+class PanelPreviewHost extends StatefulWidget {
+  const PanelPreviewHost({super.key, required this.child, required this.seat});
+  final Widget child;
+  final Seat? seat;
+
+  /// Opens [page] in the main area of the nearest host, or on the navigator when there is none (a phone's sheet).
+  static void open(BuildContext context, WidgetBuilder page) {
+    final host = context.getInheritedWidgetOfExactType<_PreviewScope>();
+    if (host != null) {
+      host.open(page);
+    } else {
+      Navigator.of(context).push(MaterialPageRoute<void>(builder: page));
+    }
+  }
+
+  @override
+  State<PanelPreviewHost> createState() => _PanelPreviewHostState();
+}
+
+class _PanelPreviewHostState extends State<PanelPreviewHost> {
+  WidgetBuilder? _page;
+  int _opened = 0;
+
+  void _open(WidgetBuilder page) => setState(() {
+        _page = page;
+        _opened++;
+      });
+
+  @override
+  Widget build(BuildContext context) {
+    final page = _page;
+    return _PreviewScope(
+      open: _open,
+      child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        Expanded(
+          child: Stack(children: [
+            // Laid out at the same size while hidden: the terminal does not resize, and takes no keys.
+            Positioned.fill(
+              child: Offstage(
+                  offstage: page != null,
+                  child: ExcludeFocus(excluding: page != null, child: TickerMode(enabled: page == null, child: widget.child))),
+            ),
+            if (page != null)
+              Positioned.fill(
+                child: Navigator(
+                  key: ValueKey(_opened),
+                  observers: [_BaseObserver(() => setState(() => _page = null))],
+                  onGenerateInitialRoutes: (_, __) => [
+                    PageRouteBuilder<void>(pageBuilder: (_, __, ___) => const SizedBox.shrink()),
+                    MaterialPageRoute<void>(builder: page),
+                  ],
+                ),
+              ),
+          ]),
+        ),
+        if (widget.seat != null) AgentPanelDock(seat: widget.seat!),
+      ]),
+    );
+  }
+}
+
+class _PreviewScope extends InheritedWidget {
+  const _PreviewScope({required this.open, required super.child});
+  final void Function(WidgetBuilder page) open;
+  @override
+  bool updateShouldNotify(_PreviewScope old) => false;
+}
+
+/// Tells when the preview's navigator is back at its empty first page.
+class _BaseObserver extends NavigatorObserver {
+  _BaseObserver(this.onBase);
+  final VoidCallback onBase;
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
+    if (previousRoute?.isFirst ?? false) WidgetsBinding.instance.addPostFrameCallback((_) => onBase());
+  }
+}
+
 /// The dock at the right of an agent's desktop terminal: tabs for Info (context, and what runs here), Files, Images and
 /// Artifacts. Fed by the background chat sync, so it trails the agent by a sync cycle.
 class AgentPanelDock extends StatefulWidget {
@@ -219,14 +301,9 @@ class _AgentPanelDockState extends State<AgentPanelDock> {
   }
 
   void _open(BuildContext context, RigMedia m, List<RigMedia> items) {
-    final nav = Navigator.of(context);
-    if (_tab == DockTab.files) {
-      nav.push(MaterialPageRoute<void>(builder: (_) => ArtifactViewer(path: m.ref)));
-      return;
-    }
+    if (_tab == DockTab.files) return PanelPreviewHost.open(context, (_) => ArtifactViewer(path: m.ref));
     final paths = [for (final i in items) i.ref];
-    nav.push(MaterialPageRoute<void>(
-        builder: (_) => MediaViewer(paths: paths, initial: paths.indexOf(m.ref), seat: widget.seat)));
+    PanelPreviewHost.open(context, (_) => MediaViewer(paths: paths, initial: paths.indexOf(m.ref), seat: widget.seat));
   }
 
   Widget _info(BuildContext context, Tokens k, HostFeed? feed) {
@@ -402,8 +479,7 @@ class ArtifactCards extends StatelessWidget {
     );
   }
 
-  void _open(BuildContext context, RigMedia m) =>
-      Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => ArtifactViewer(path: m.ref)));
+  void _open(BuildContext context, RigMedia m) => PanelPreviewHost.open(context, (_) => ArtifactViewer(path: m.ref));
 }
 
 /// The header button that shows or hides the dock.

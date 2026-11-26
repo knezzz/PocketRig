@@ -8,6 +8,7 @@ import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/agent_panels.dart';
 import 'package:pocket_rig/ui/agent_view_switch.dart';
 import 'package:pocket_rig/ui/artifact_viewer.dart' show ArtifactViewer;
+import 'package:pocket_rig/ui/chat/media_view.dart' show MediaViewer;
 
 import 'golden/fixtures.dart';
 
@@ -181,6 +182,32 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     });
 
+    testWidgets('a dock item opens in the main area beside the open dock; closing it brings back the same child, still mounted',
+        (tester) async {
+      tester.view.physicalSize = const Size(1000, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await pump(tester, PanelPreviewHost(seat: seatFromFixture('r-conveyor', 'lead'), child: const _Live()));
+      final live = tester.state(find.byType(_Live));
+      final mainRight = tester.getTopRight(find.byType(_Live)).dx;
+      for (final (tab, item, shown) in [('Files 1', 'c.dart', ArtifactViewer), ('Artifacts 3', 'report.html', ArtifactViewer), ('Images 2', 'a.png', MediaViewer)]) {
+        await tester.tap(find.text(tab));
+        await tester.pump();
+        await tester.tap(find.text(item));
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.byType(shown), findsOneWidget, reason: '$item opens');
+        expect(find.text(tab), findsOneWidget, reason: 'the dock stays open beside it');
+        expect(tester.getTopRight(find.byType(shown)).dx, mainRight, reason: 'in the main area, not over the dock');
+        expect(find.byType(_Live, skipOffstage: false), findsOneWidget, reason: 'the live child stays mounted');
+        await tester.tap(find.byTooltip('Back'));
+        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump();
+        expect(find.byType(shown), findsNothing, reason: 'Back closes it');
+        expect(tester.state(find.byType(_Live)), same(live), reason: 'the same live child, not a rebuilt one');
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+
     testWidgets('the dock is tabs: Info first, then Files, Images and Artifacts with their counts; it drags wider and hides',
         (tester) async {
       tester.view.physicalSize = const Size(1000, 2000);
@@ -244,4 +271,16 @@ void main() {
         find.byWidgetPredicate((w) => w is Semantics && w.properties.label == 'Terminal' && w.properties.selected == true),
         findsOneWidget);
   });
+}
+
+/// Stands for the terminal: a child whose state must survive a preview opening over it.
+class _Live extends StatefulWidget {
+  const _Live();
+  @override
+  State<_Live> createState() => _LiveState();
+}
+
+class _LiveState extends State<_Live> {
+  @override
+  Widget build(BuildContext context) => const ColoredBox(color: Colors.black, child: SizedBox.expand());
 }

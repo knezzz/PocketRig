@@ -453,8 +453,8 @@ class _TerminalScreenState extends State<TerminalScreen> {
         Expanded(
           child: Stack(children: [
           Positioned.fill(
-          child: Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-          Expanded(
+          child: PanelPreviewHost(
+          seat: isDesktop && target is SeatTarget ? target.seat : null,
           child: Builder(builder: (context) {
             const pad = 2.0;
             const size = 12.0;
@@ -493,9 +493,6 @@ class _TerminalScreenState extends State<TerminalScreen> {
             return view;
           }),
           ),
-          // The agent's panels (images, file edits) at the right; the terminal reflows when they fold away.
-          if (isDesktop && target is SeatTarget) AgentPanelDock(seat: target.seat),
-          ]),
           ),
           // Scrolled back into tmux's history: the way back to the live output (typing does it too).
           Positioned(

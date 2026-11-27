@@ -157,7 +157,7 @@ class _MenuHostState extends State<_MenuHost> {
         textStyle: const WidgetStatePropertyAll(TextStyle(fontFamily: fontSans, fontSize: 13, fontWeight: FontWeight.w400)),
         shape: WidgetStatePropertyAll(RoundedRectangleBorder(borderRadius: BorderRadius.circular(3))),
         foregroundColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.disabled) ? k.muted : fg),
-        iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.disabled) ? k.muted : (danger ? fg : k.muted)),
+        iconColor: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.disabled) ? k.muted : fg),
         backgroundColor: WidgetStateProperty.resolveWith(
             (s) => s.contains(WidgetState.hovered) || s.contains(WidgetState.focused) ? menuHighlight(k) : Colors.transparent),
         overlayColor: const WidgetStatePropertyAll(Colors.transparent),

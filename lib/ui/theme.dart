@@ -228,6 +228,8 @@ ThemeData buildTheme(Tokens k, Brightness b) {
     colorScheme: scheme,
     useMaterial3: true,
     fontFamily: fontSans,
+    // An icon with no colour of its own takes the ink, not Material's black (or white) default.
+    iconTheme: IconThemeData(color: k.ink),
     pageTransitionsTheme: const PageTransitionsTheme(builders: {
       TargetPlatform.android: FadeForwardsPageTransitionsBuilder(),
       TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),

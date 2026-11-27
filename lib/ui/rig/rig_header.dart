@@ -24,7 +24,7 @@ List<Widget> rigHeaderButtons(BuildContext context, RigActionSet actions) {
       textStyle: const TextStyle(fontFamily: fontSans, fontSize: 13, fontWeight: FontWeight.w600),
     ).merge(compactAction);
     final child = Row(mainAxisSize: MainAxisSize.min, children: [
-      IconTheme(data: const IconThemeData(size: 16), child: icon),
+      IconTheme.merge(data: const IconThemeData(size: 16), child: icon),
       const SizedBox(width: 6),
       Text(label),
     ]);

@@ -38,6 +38,9 @@ void main() {
       (tester) async {
     final store = await installFakes();
     isDesktop = true;
+    // A Mac window, tall enough for the rig's header with its sub-line above the tiles.
+    await tester.binding.setSurfaceSize(const Size(1400, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
     addTearDown(() => isDesktop = false);
     // lead waits on a permission: on a phone that brings the answer card.
     final lead = seatFromFixture('r-conveyor', 'lead');

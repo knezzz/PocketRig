@@ -15,16 +15,15 @@ import '../ssh/ssh_exec.dart';
 import '../terminal/transport.dart';
 import 'app_icon.dart';
 import 'busy.dart';
-import 'worktree_chip.dart';
 import 'chat_screen.dart';
 import 'common.dart';
-import 'host_color.dart' show hostOverline;
 import 'kit.dart';
 import 'project_tally.dart' show rigIconColor;
 import 'rig/overview_tab.dart';
 import 'rig/progress_tab.dart' show ProgressBody, RigDangerZone;
 import 'rig/rig_actions.dart';
 import 'rig/rig_bar.dart' show rigBarActions, rigTitle;
+import 'rig/rig_subline.dart' show RigSubLine;
 import 'tiles_screen.dart' show TilesScreen, tilesEnlarge;
 import 'open_agents_on.dart' show openAgentsOn;
 import 'agent_view_switch.dart' show AgentView;
@@ -292,12 +291,9 @@ class _RigScreenState extends State<RigScreen> with Polling {
   Widget _page(BuildContext context, bool wide) {
     showsInPanel(context, 'rig:${_rig.id}');
     final host = AppScope.of(context).active;
-    final renamed = host?.rigNames[_rig.name] != null;
     final withSeats = RigWithSeats(_rig, _seats);
-    final cwd = withSeats.primaryCwd;
     final stopped = _rig.status == 'stopped';
     final k = Tokens.of(context);
-    final agents = _seats.where((s) => s.isAgent).length;
     final open = _queue.where((q) => isOpenQueueState(q.state)).length;
     final tabs = [_RigTab.agents, if (!stopped) _RigTab.graph, _RigTab.work, _RigTab.code, _RigTab.progress];
     final tab = tabs.contains(_tab) ? _tab : _RigTab.agents;
@@ -315,16 +311,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
       // Under the title row, across the whole width: project · host · worktree · N agents (the real name too when this app
       // renamed the rig); then, on a phone, the four actions as tiles; then the tabs. The Mac has the actions in the bar.
       bottom: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 0, 0, 12),
-          child: Wrap(spacing: 8, runSpacing: 2, crossAxisAlignment: WrapCrossAlignment.center, children: [
-            Text([widget.projectName, if (renamed) _rig.name].join(' · '), style: mono(context, size: 12, color: k.muted)),
-            if (host != null) hostOverline(host, mono(context, size: 12, color: k.muted)),
-            if (cwd != null) WorktreeChip(worktreeName(cwd) ?? 'main'),
-            Text('$agents ${agents == 1 ? 'agent' : 'agents'}', style: mono(context, size: 12, color: k.muted)),
-            if (_rig.status != 'running') RigStatusLine(_rig),
-          ]),
-        ),
+        RigSubLine(rig: _rig, seats: _seats, projectName: widget.projectName),
         TabStrip<_RigTab>(
           values: tabs,
           labels: [for (final t in tabs) t == _RigTab.work && open > 0 ? 'Work $open' : t.label],

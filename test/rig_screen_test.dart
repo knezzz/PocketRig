@@ -105,7 +105,7 @@ void main() {
     expect(find.text('All 4'), findsNothing, reason: 'no status filter chips');
     // The header's one line: project · host · worktree · agents; the four actions are tiles under it on a phone.
     expect(find.text('4 agents'), findsOneWidget);
-    expect(find.text('main'), findsOneWidget, reason: 'the worktree chip: the main checkout');
+    expect(find.text('feat/409-retry'), findsOneWidget, reason: 'the branch chip (git is known) takes the worktree chip\'s place');
     for (final a in ['New', 'Message all', 'Room', 'Reminders']) {
       expect(find.bySemanticsLabel(a), findsOneWidget, reason: a);
     }
@@ -136,7 +136,7 @@ void main() {
     for (var i = 0; i < 30; i++) {
       await tester.pump(const Duration(milliseconds: 100));
     }
-    await tester.scrollUntilVisible(find.text('feat/409-retry'), 200, scrollable: code);
+    await tester.scrollUntilVisible(find.text('#42 Retry 409s with backoff'), 200, scrollable: code); // the branch row is above it
     expect(find.text('#42 Retry 409s with backoff'), findsOneWidget);
     // Progress is its own tab.
     await tab(tester, 'Progress');

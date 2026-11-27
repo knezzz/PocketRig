@@ -11,6 +11,7 @@ import '../project_tally.dart' show rigIconColor;
 import '../theme.dart';
 import 'rig_actions.dart';
 import 'rig_header.dart';
+import 'rig_subline.dart' show RigSubLine;
 import 'rig_room.dart' show RigRoomScreen, RemindersScreen, broadcastToRig;
 
 /// The rig's own actions, the same on every rig view (its page, its tiles, an agent's chat): + New, Message all, Room, Reminders.
@@ -104,6 +105,8 @@ class RigBar extends StatelessWidget {
       titleIcon: AppIcon(AppIconKind.rig, size: 22, color: rigIconColor(k, RigWithSeats(rig, seats), host)),
       title: rigTitle(context, rig),
       showBack: showBack,
+      // The same line as the rig page's, under the title.
+      bottom: RigSubLine(rig: rig, seats: seats, projectName: projectName),
       actions: rigBarActions(context,
           rig: rig, seats: seats, projectName: projectName, wide: true, onDeleted: () => Navigator.of(context).maybePop()),
     );

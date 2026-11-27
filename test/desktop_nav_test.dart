@@ -164,8 +164,8 @@ void main() {
     expect(tester.widget<Text>(side('adversarial-review').first).style?.fontWeight, FontWeight.w600, reason: 'its rig holds it');
     expect(tester.widget<Text>(side('app').first).style?.fontWeight, FontWeight.w800, reason: 'so does its project');
     expect(tester.widget<Text>(side('conveyor')).style?.fontWeight, FontWeight.w400, reason: 'not the other rig (folded: a plain row)');
-    expect(find.descendant(of: find.byType(TilesScreen), matching: find.textContaining(homelab.name, findRichText: true)), findsOneWidget,
-        reason: 'the tiles name the host');
+    expect(find.descendant(of: find.byType(TilesScreen), matching: find.textContaining(homelab.name, findRichText: true)), findsNWidgets(2),
+        reason: 'the tiles name the host: in the rig title and in the line under it');
 
     await tester.tap(find.text('app').first);
     await tester.pump(const Duration(seconds: 1));

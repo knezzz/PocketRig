@@ -44,7 +44,9 @@ The `ios/` and `android/` folders are committed, so no `flutter create` is neede
 
 The Xcode projects (`ios/`, `macos/`) are signed with the author's team. Set your own `DEVELOPMENT_TEAM` in Xcode (Runner target, Signing & Capabilities), and change the bundle ids if you ship your own build.
 
-**OpenRig version:** the daemon API used here was checked against **OpenRig 0.7.6** (`@openrig/cli`). The API is internal and changes between releases, so if `rig --version` on your host is newer and something breaks, the fix belongs in `lib/api/openrig_client.dart`.
+**OpenRig version:** the daemon API used here was checked against **OpenRig 0.7.24** (`@openrig/cli`; release notes up to 0.7.24, daemon routes read in the 0.7.22 install). The API is internal and changes between releases, so if `rig --version` on your host is newer and something breaks, the fix belongs in `lib/api/openrig_client.dart`.
+
+**Keeping up with OpenRig:** `rig up rigs/whats-new.yaml` starts a one-seat rig that reads [openrig.dev/whats-new](https://openrig.dev/whats-new) every week (a `periodic-reminder` watchdog it registers itself), checks new releases against the API above, fixes what changed on a `whats-new/<version>` branch and asks before it opens a pull request. Its instructions are in `rigs/roles/whats-new-scout.md`.
 
 **Plain HTTP to the tailnet** is already allowed in the committed platform folders. The daemon speaks `http://`, and Tailscale encrypts the traffic:
 

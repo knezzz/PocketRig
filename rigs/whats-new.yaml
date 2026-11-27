@@ -1,0 +1,35 @@
+version: "0.2"
+name: pocketrig-whats-new
+culture_file: STARTUP-CULTURE.md
+summary: >
+  One Opus seat that reads https://openrig.dev/whats-new once a week, checks each new OpenRig release against the
+  daemon API PocketRig uses, fixes what broke or what the app can now use on a branch, and asks the person before it
+  opens a pull request with the changelog and any breaking changes.
+
+pods:
+  - id: watch
+    label: Watch
+    members:
+      - id: scout
+        role: whats-new-scout
+        model: claude-opus-5-5
+        effort: medium
+        agent_ref: local:agents/pocketrig
+        profile: builder
+        runtime: claude-code
+        cwd: ..
+        claude_permissions:
+          deny:
+            - Bash(git push --force*)
+            - Bash(git push -f*)
+            - Bash(git reset --hard*)
+            - Bash(git add -A*)
+            - Bash(git add .)
+            - Bash(git commit -a*)
+            - Bash(adb -s YOUR_ANDROID_ID *)
+        startup:
+          files:
+            - path: roles/whats-new-scout.md
+              delivery_hint: send_text
+              required: true
+    edges: []

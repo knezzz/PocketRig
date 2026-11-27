@@ -977,8 +977,7 @@ class _ProjectGroup extends StatelessWidget {
       for (final sh in showShells)
         _Row(
           level: _Level.agent,
-          depth: depth + 1,
-          guides: depth,
+          depth: depth,
           agentStatus: Status.idle,
           kind: StatusKind.shell,
           label: host.shellLabel(sh.name),
@@ -1015,11 +1014,10 @@ StatusIcon _kindIcon(StatusKind kind, Status status, Color ground, String? runti
 
 /// An agent outside a rig: its row (its runtime's logo in the state colour, name, age), then the subagents it runs.
 List<Widget> _looseRows(BuildContext context, Host host, LooseAgent a, List<RigWithSeats> rigs, String? panel, int depth, String project) => [
-      // At the depth of an agent under a rig (its label is at the same x), with only its project's guide above it.
+      // The rig's sibling: the rig row's depth, its icon where the rig's is. What it runs (subagents, shells) is one in.
       _Row(
         level: _Level.agent,
-        depth: depth + 1,
-        guides: depth,
+        depth: depth,
         agentStatus: Status.of(looseState(host, a)),
         runtime: a.runtime,
         label: a.name,
@@ -1038,12 +1036,12 @@ List<Widget> _looseRows(BuildContext context, Host host, LooseAgent a, List<RigW
                   MaterialPageRoute<void>(builder: (_) => TerminalScreen(target: SeatTarget('no rig', a.toSeat())))));
         },
       ),
-      ..._subagentRows(context, host, a.toSeat(), depth + 1, () {
+      ..._subagentRows(context, host, a.toSeat(), depth, () {
         useHost(context, host);
         openLooseAgent(detailNavigator(context), a, rigs);
       }, guides: depth),
       // A shell opens its agent's shells (live output, Stop).
-      ...jobRows(jobsOfLoose(host, a), depth + 1, (job) {
+      ...jobRows(jobsOfLoose(host, a), depth, (job) {
         useHost(context, host);
         detailNavigator(context).push(MaterialPageRoute<void>(
             builder: (_) => ShellsScreen(host: host, seat: a.toSeat(), title: a.name, project: project, tapped: job)));

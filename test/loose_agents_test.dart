@@ -409,9 +409,9 @@ void main() {
         ..writeAsStringSync('''#!/bin/sh
 echo "\$*" >> "${tmuxLog.path}"
 case "\$1" in
-  has-session) [ -f "${home.path}/running" ] ;;
+  has-session) [ -f "${home.path}/running" ] && [ "\$3" = "=n1" ] ;;
   new-session) touch "${home.path}/running" ;;
-  list-panes) echo %7 ;;
+  list-panes) case "\$*" in *pane_pid*) cat "${home.path}/panepid" 2>/dev/null ;; *) echo %7 ;; esac ;;
 esac
 ''');
       Process.runSync('chmod', ['+x', tmux.path]);
@@ -520,6 +520,37 @@ esac
       test('a tmux session already gone counts as killed', () async {
         expect(await kill(name: 'n1', pane: '%7'), contains('pocketrig-kill-ok'));
         expect(tmuxLog.readAsStringSync(), isNot(contains('kill-')));
+      });
+
+      test('a gone session kills nothing, even when a live process holds its conversation id', () async {
+        // The conversation was resumed in another session (or the pid reused): that process is not this agent's.
+        final p = await agent('abc', 'sleep 60 & wait');
+        expect(await kill(id: 'abc', name: 'n1', pane: '%7'), contains('pocketrig-kill-ok'));
+        expect(tmuxLog.readAsStringSync(), isNot(contains('kill-')));
+        expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue, reason: 'still alive');
+      });
+
+      test('a live session does not take a process that is in no pane of it', () async {
+        File('${home.path}/running').createSync();
+        File('${home.path}/panepid').writeAsStringSync('1\n');
+        final p = await agent('abc', 'sleep 60 & wait');
+        expect(await kill(id: 'abc', name: 'n1'), contains('pocketrig-kill-ok'));
+        expect(tmuxLog.readAsStringSync(), contains('kill-session -t =n1'));
+        expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue, reason: 'its session closed, the other conversation stays');
+      });
+
+      test('the agent in a pane of its session is stopped with it', () async {
+        File('${home.path}/running').createSync();
+        final p = await agent('abc', 'sleep 60 & wait');
+        File('${home.path}/panepid').writeAsStringSync('${p.pid}\n');
+        expect(await kill(id: 'abc', name: 'n1'), contains('pocketrig-kill-ok'));
+        expect(await p.exitCode.timeout(const Duration(seconds: 3)), isNot(0));
+      });
+
+      test('a name that is a prefix of another session\'s closes nothing', () async {
+        File('${home.path}/running').createSync();
+        expect(await kill(name: 'n'), contains('pocketrig-kill-ok'));
+        expect(tmuxLog.readAsStringSync(), allOf(contains('has-session -t =n'), isNot(contains('kill-'))), reason: 'n1 is not n');
       });
 
       test('nothing is killed when the session is unknown or its pid was reused', () async {

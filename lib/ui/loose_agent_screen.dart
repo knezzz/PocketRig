@@ -506,7 +506,7 @@ class _LooseAgentScreenState extends State<LooseAgentScreen> {
           ]),
         ),
         // Once adopted it's a rig seat, and those stop with their rig.
-        if (_adopted == null) KillBar([('Kill agent…', Icons.dangerous_outlined, _busy ? null : _kill)]),
+        if (_adopted == null) KillBar([(looseGone(host ?? AppScope.read(context).active, a) ? 'Remove from list…' : 'Kill agent…', Icons.dangerous_outlined, _busy ? null : _kill)]),
       ]),
     );
   }
@@ -623,7 +623,7 @@ ActionRows looseActionRows(BuildContext context, LooseAgent a,
       ),
     ], danger: [
       (
-        'Kill agent…',
+        looseGone(AppScope.read(context).active, a) ? 'Remove from list…' : 'Kill agent…',
         Icons.dangerous_outlined,
         () async {
           if (await killLooseAgent(context, a)) onKilled?.call();
@@ -635,20 +635,24 @@ Future<bool> killLooseAgent(BuildContext context, LooseAgent a) async {
   final host = AppScope.read(context).active;
   final messenger = ScaffoldMessenger.of(context);
   final k = Tokens.of(context);
+  // Its tmux session is gone: nothing runs to kill (the script stops nothing), the record is only cleared.
+  final gone = looseGone(host, a);
   if (host == null ||
       !await confirmSheet(context,
-          title: 'Kill ${a.name}?',
-          body: 'This ends the agent and any running tool, which can leave that work unfinished. ${switch (a) {
+          title: gone ? 'Remove ${a.name} from the list?' : 'Kill ${a.name}?',
+          body: gone
+              ? 'Its tmux session ${a.tmuxSession} is gone, so nothing is running. This only clears it from the list.'
+              : 'This ends the agent and any running tool, which can leave that work unfinished. ${switch (a) {
             LooseAgent(inTmux: false) => 'Its terminal tab stays open.',
             LooseAgent(tmuxPane: null) => 'It closes the tmux session ${a.tmuxSession} and everything in it.',
             _ => 'It closes the agent\'s tmux pane.',
           }}',
-          action: 'Kill')) {
+          action: gone ? 'Remove' : 'Kill')) {
     return false;
   }
   try {
     await killAgent(host, a);
-    toastOn(messenger, k, 'Killed ${a.name}');
+    toastOn(messenger, k, gone ? 'Removed ${a.name}' : 'Killed ${a.name}');
     // The daemon keeps listing a dead tmux session until its next scan.
     fleet.feedFor(host).refresh(scan: true).ignore();
     return true;

@@ -211,7 +211,7 @@ class AgentJob {
 /// line (with its subtree's CPU and size), then an O line with the tail of its
 /// stdout when that is a file, and with `$2` over 1, that many L lines of it.
 const _script = r'''
-panes=$(tmux list-panes -s -t "$1" -F '#{pane_pid}' 2>/dev/null) || exit 0
+panes=$(tmux list-panes -s -t "=$1" -F '#{pane_pid}' 2>/dev/null) || exit 0
 jobs=$(ps -axwwo pid=,ppid=,stat=,etime=,%cpu=,command= | awk -v panes="$panes" '
 { p=$1; pp[p]=$2; st[p]=$3; et[p]=$4; cpu[p]=$5; c=$0; sub(/^ *[^ ]+ +[^ ]+ +[^ ]+ +[^ ]+ +[^ ]+ /, "", c); cmd[p]=c; kids[$2]=kids[$2] " " p }
 function shell(p) { return cmd[p] ~ /^(-|\/[^ ]*\/)?(ba|z|fi|da|k)?sh( -l| --login)?$/ }

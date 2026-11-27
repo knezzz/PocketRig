@@ -12,6 +12,7 @@ String countOf(int n, String one) => '$n ${n == 1 ? one : '${one}s'}';
 
 /// A hand-started agent's state, as its row shows it.
 SeatState looseState(Host? host, LooseAgent a) {
+  if (looseGone(host, a)) return SeatState.stopped; // its tmux session is gone: greyed, not a live agent
   if (a.waiting) return SeatState.needsYou;
   // Working wins: on a shell means the agent itself is idle.
   if (a.isWorking(DateTime.now())) return SeatState.working;

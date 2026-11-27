@@ -282,7 +282,8 @@ Future<({String name, bool tabLeftBehind})> restartInTmux(Host host,
 
 /// Ends an agent for good. In tmux it closes [pane], or the whole session [name]
 /// when the pane isn't known; a pane that's no longer in that session is left
-/// alone. The process behind [sessionId] gets TERM, then KILL after [waitSeconds].
+/// alone. The process behind [sessionId] gets TERM, then KILL after [waitSeconds], but only when it runs in that tmux
+/// session (with a [name] given): a gone session kills nothing.
 /// Prints `pocketrig-kill-ok` or `pocketrig-kill-error <why>`.
 ///
 /// A killed process may never fire SessionEnd, and the watcher keeps a waiting
@@ -305,12 +306,24 @@ fi
 if [ -n "\$name" ]; then
   command -v tmux >/dev/null 2>&1 || fail no-tmux
   if tmux has-session -t "=\$name" 2>/dev/null; then
+    # The process is this agent's only when one of the session's panes is it or its ancestor: a conversation resumed
+    # elsewhere, or a reused pid, is another session's, and is left running.
+    panes=\$(tmux list-panes -s -t "=\$name" -F '#{pane_pid}' 2>/dev/null | tr '\\n' ' ')
+    p=\$pid; mine=
+    while [ -n "\$p" ] && [ "\$p" -gt 1 ] 2>/dev/null; do
+      case " \$panes" in *" \$p "*) mine=1; break ;; esac
+      p=\$(ps -o ppid= -p "\$p" 2>/dev/null | tr -d ' ')
+    done
+    [ -n "\$mine" ] || pid=
     if [ -z "\$pane" ]; then
       tmux kill-session -t "=\$name" 2>/dev/null || fail kill-failed
     else
       tmux list-panes -s -t "=\$name" -F '#{pane_id}' 2>/dev/null | grep -Fxq "\$pane" || fail pane-moved
       tmux kill-pane -t "\$pane" 2>/dev/null || fail kill-failed
     fi
+  else
+    # Its session is gone: nothing of it is left to stop, and a process holding the id is some other session's.
+    pid=
   fi
 fi
 if [ -n "\$pid" ]; then

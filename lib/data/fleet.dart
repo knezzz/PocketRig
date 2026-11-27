@@ -708,6 +708,13 @@ class Fleet extends ChangeNotifier {
 
 final fleet = Fleet();
 
+/// Whether [a]'s tmux session is gone from [host]'s last scan of its sessions (a record the watcher still keeps). Not known
+/// before a scan, or when the host lists no session at all.
+bool looseGone(Host? host, LooseAgent a) {
+  final jobs = host == null ? null : fleet.feedFor(host).jobs;
+  return jobs != null && jobs.isNotEmpty && a.tmuxSession != null && !jobs.containsKey(a.tmuxSession);
+}
+
 /// The shells and monitors [a] (outside a rig) is waiting on, from [host]'s last process scan.
 List<AgentJob> jobsOfLoose(Host? host, LooseAgent a) {
   final jobs = host == null ? null : fleet.feedFor(host).jobs[a.tmuxSession];

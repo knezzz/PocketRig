@@ -1342,6 +1342,13 @@ class _Row extends StatelessWidget {
   /// False: [onMore] is reached by long press and right click only (project and rig rows).
   final bool moreButton;
 
+  /// An agent that needs you paints its whole row in the Rigs home's needs-you tint; selected keeps its ground under it and its border.
+  Color _fill(Tokens k) {
+    final tint = agentStatus == Status.needsYou ? k.accent.withValues(alpha: 0.08) : null;
+    if (selected) return tint == null ? k.ground : Color.alphaBlend(tint, k.ground);
+    return tint ?? Colors.transparent;
+  }
+
   @override
   Widget build(BuildContext context) => HoverBuilder(builder: _build);
 
@@ -1359,7 +1366,7 @@ class _Row extends StatelessWidget {
       button: onTap != null,
       label: said.isEmpty ? null : '$label, $said',
       child: Material(
-        color: selected ? k.ground : Colors.transparent,
+        color: _fill(k),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kRadius),
           side: BorderSide(color: selected ? k.border : Colors.transparent),

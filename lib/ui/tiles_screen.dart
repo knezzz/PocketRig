@@ -20,6 +20,7 @@ import 'rig/seat_actions.dart' show seatMenuRows;
 import 'rig/seat_sheet.dart' show showSeatSheet;
 import 'agent_panels.dart' show AgentMediaCounts, AgentPanelsToggle, PanelPreviewHost;
 import 'common.dart' show toast;
+import 'file_drop.dart';
 import 'agent_header.dart' show AgentHeader;
 import 'agent_view_switch.dart' show AgentView, agentViews;
 import 'chat_screen.dart' show ChatScreen, seatScreen;
@@ -461,7 +462,7 @@ class _TileState extends State<_Tile> {
                     onPointerMove: (e) => _scroll.onPointerMove(e, line),
                     onPointerSignal: (e) => _scroll.onPointerSignal(e, line),
                     onPointerPanZoomUpdate: (e) => _scroll.onPanZoomUpdate(e, line),
-                    child: TerminalView(
+                    child: ImageDropTarget(onPaste: (p) => _terminal.paste(quotedPaths(p)), child: TerminalView(
                   _terminal,
                   focusNode: _focus,
                   autoResize: true,
@@ -473,7 +474,7 @@ class _TileState extends State<_Tile> {
                   simulateScroll: false,
                   onTapUp: (d, cell) => openLinkOnModClick(_terminal, d, cell),
                   onKeyEvent: shiftEnterNewline(_input),
-                ))),
+                )))),
                   // Scrolled back into tmux's history: the way back to the live output (typing does it too), as in the single terminal.
                   Positioned(
                     right: 8,

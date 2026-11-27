@@ -120,15 +120,19 @@ extension _ChatSend on _ChatPageState {
     if (files.isEmpty || !mounted) return;
     _set(() => _sending = true);
     try {
-      final paths = await uploadAttachments(host, files);
-      final text = _msg.text.trimRight();
-      _msg.text = '${text.isEmpty ? '' : '$text '}${paths.join(' ')} ';
-      _msg.selection = TextSelection.collapsed(offset: _msg.text.length);
+      _addPaths(await uploadAttachments(host, files));
     } catch (e) {
       if (mounted) toast(context, 'Couldn\'t send the file: $e');
     } finally {
       if (mounted) _set(() => _sending = false);
     }
+  }
+
+  /// Adds uploaded files' [paths] to the message, where the agent reads them.
+  void _addPaths(List<String> paths) {
+    final text = _msg.text.trimRight();
+    _msg.text = '${text.isEmpty ? '' : '$text '}${paths.join(' ')} ';
+    _msg.selection = TextSelection.collapsed(offset: _msg.text.length);
   }
 
   /// Opens the session in the Claude app or claude.ai, where Remote Control

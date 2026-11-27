@@ -52,6 +52,7 @@ import 'tiles_screen.dart' show terminalInTile;
 import 'needs_you_banner.dart';
 import 'kit.dart';
 import 'loose_agent_screen.dart';
+import 'file_drop.dart';
 import 'theme.dart';
 import 'chat/composer.dart';
 import 'chat/git_cards.dart';
@@ -755,7 +756,7 @@ class _ChatPageState extends State<ChatPage> {
     ].join(' · ');
     if (widget.embedded && widget.active) _publishHeader(subtitle, git);
     final content = <Widget>[
-        Expanded(child: PageColumn(maxWidth: chatColumnWidth, child: body)),
+        Expanded(child: ImageDropTarget(onPaste: _addPaths, child: PageColumn(maxWidth: chatColumnWidth, child: body))),
         if (_sessionPills() case final pills?) PageColumn(maxWidth: chatColumnWidth, child: pills),
         // The phone: the agent's files and images, a tap from the sheet (nothing when it has none).
         if (!isDesktop) PanelsStrip(seat: _seat),

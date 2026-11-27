@@ -29,6 +29,7 @@ import 'status_shape.dart';
 import 'desktop_shell.dart' show seatPanelKey, showsInPanel;
 import 'action_rows.dart' show showActionRows;
 import 'rig/seat_actions.dart' show seatMenuRows;
+import 'file_drop.dart';
 import 'theme.dart';
 import 'rig/rig_host.dart' show RigMode, rigRoute;
 
@@ -501,7 +502,7 @@ class _TerminalScreenState extends State<TerminalScreen> {
                 onKeyEvent: shiftEnterNewline(_input),
               ),
             );
-            return Stack(children: [Positioned.fill(child: view),
+            return Stack(children: [Positioned.fill(child: ImageDropTarget(onPaste: (p) => _terminal.paste(quotedPaths(p)), child: view)),
               // Scrolled back into tmux's history: the way back to the live output (typing does it too). In the child, so
               // it goes with the terminal when a dock preview covers it.
               Positioned(

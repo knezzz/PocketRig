@@ -1,0 +1,4 @@
+policy: periodic-reminder
+target:
+  session: scout@pocketrig-whats-new
+message: "Weekly OpenRig check: follow roles/whats-new-scout.md from step 1."

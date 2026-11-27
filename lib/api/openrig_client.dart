@@ -395,6 +395,10 @@ class OpenRigClient {
     if (res is Map && res['ok'] == false) {
       throw OpenRigException((res['error'] ?? res['reason'] ?? 'Send failed').toString());
     }
+    // OpenRig 0.7.16+: a seat that no longer exists answers 200 with the text kept in the outbox, not delivered (was 404).
+    if (res is Map && res['outcome'] == 'recorded') {
+      throw OpenRigException('Not delivered: $session is gone. ${res['warning'] ?? ''}'.trim());
+    }
   }
 
   /// POST /api/transport/broadcast with `rig` — `rig broadcast --rig`: types

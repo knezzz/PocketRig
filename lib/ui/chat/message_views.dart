@@ -66,8 +66,9 @@ class UserBubble extends StatelessWidget {
     final (rest, media) = splitUploads(text);
     return Align(
       alignment: Alignment.centerRight,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.8),
+      // 80% of the chat's own width (a window's width counts the sidebar and the dock).
+      child: LayoutBuilder(builder: (context, box) => ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: box.maxWidth * 0.8),
         child: Opacity(
           opacity: pending ? 0.55 : 1,
           child: Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -93,7 +94,7 @@ class UserBubble extends StatelessWidget {
               const SizedBox(height: 6),
           ]),
         ),
-      ),
+      )),
     );
   }
 }

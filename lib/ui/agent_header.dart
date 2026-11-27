@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../data/host_store.dart' show isDesktop;
 import '../models.dart';
 import 'agent_view_switch.dart';
-import 'page_column.dart' show chatColumnWidth;
 import 'progress_bar.dart';
 import 'status_shape.dart';
 import 'theme.dart';
@@ -134,16 +133,8 @@ class AgentHeader extends StatelessWidget {
             if (bottom != null)
               Padding(
                 padding: const EdgeInsets.only(top: 4),
-                child: LayoutBuilder(builder: (context, box) {
-                  // Its edges are the chat cards' edges: 20 in from the column's, or from the phone's own 12.
-                  final inColumn = box.maxWidth > chatColumnWidth;
-                  return Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: chatColumnWidth),
-                      child: Padding(padding: EdgeInsets.symmetric(horizontal: inColumn ? 20 : 8), child: bottom),
-                    ),
-                  );
-                }),
+                // Its edges are the chat cards' edges: the header's own 12 and 8 more, the list's 20.
+                child: Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: bottom),
               ),
             if (s != null && !isDesktop && pct != null)
               Padding(

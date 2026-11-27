@@ -47,6 +47,3 @@ class PageColumn extends StatelessWidget {
         ),
       );
 }
-
-/// The chat's column: narrower than a page, so a line stays readable and a user bubble sits near the text.
-const chatColumnWidth = 720.0;

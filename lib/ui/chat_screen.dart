@@ -32,7 +32,6 @@ import '../terminal/transport.dart';
 import 'chat/chat_header.dart';
 import 'agent_view_switch.dart';
 import 'open_agents_on.dart';
-import 'page_column.dart';
 import 'subagent_open.dart';
 import 'artifact_viewer.dart';
 import 'chat/diff_view.dart';
@@ -756,13 +755,11 @@ class _ChatPageState extends State<ChatPage> {
     ].join(' · ');
     if (widget.embedded && widget.active) _publishHeader(subtitle, git);
     final content = <Widget>[
-        Expanded(child: ImageDropTarget(onPaste: _addPaths, child: PageColumn(maxWidth: chatColumnWidth, child: body))),
-        if (_sessionPills() case final pills?) PageColumn(maxWidth: chatColumnWidth, child: pills),
+        Expanded(child: ImageDropTarget(onPaste: _addPaths, child: body)),
+        if (_sessionPills() case final pills?) pills,
         // The phone: the agent's files and images, a tap from the sheet (nothing when it has none).
         if (!isDesktop) PanelsStrip(seat: _seat),
-        PageColumn(
-          maxWidth: chatColumnWidth,
-          child: canRestartInTmux(_seat)
+        canRestartInTmux(_seat)
               ? RestartBar(onRestart: () => confirmRestartInTmux(context, _seat))
               : permission
                   ? _permissionDock(_permissionCall(), modeLabel)
@@ -790,7 +787,6 @@ class _ChatPageState extends State<ChatPage> {
             onEffort: _seat.isClaude && _seat.sessionName != null ? _pickEffort : null,
             onMode: _loose || _subagent ? null : _openPermissions,
           ),
-        ),
     ];
     if (widget.embedded) return Column(children: content);
     return Scaffold(

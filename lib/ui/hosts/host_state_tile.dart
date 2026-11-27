@@ -197,7 +197,7 @@ class _HostStateTileState extends State<HostStateTile> {
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
                     // The host's colour mark, the one the sidebar and the Rigs home show.
-                    Container(width: 10, height: 10, decoration: BoxDecoration(color: hostColor(h), borderRadius: BorderRadius.circular(2))),
+                    Container(width: 10, height: 10, decoration: BoxDecoration(color: hostColor(h, Tokens.of(context)), borderRadius: BorderRadius.circular(2))),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(h.name,

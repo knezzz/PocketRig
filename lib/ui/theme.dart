@@ -146,7 +146,7 @@ class Tokens extends ThemeExtension<Tokens> {
     ink: Color(0xFFDCE0E5),
     ground: Color(0xFF282C33),
     muted: Color(0xFFA9AFBC),
-    faint: Color(0xFF6B707B),
+    faint: Color(0xFF858B97),
     border: Color(0xFF3B414D),
     divider: Color(0xFF30353E),
     fill: Color(0xFF2F343E),

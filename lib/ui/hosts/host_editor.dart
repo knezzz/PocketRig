@@ -298,7 +298,7 @@ class _HostEditorState extends State<HostEditor> {
           ),
         );
     Widget pick(Color c, int? value, String spoken) => swatch(
-        value == null ? Icon(Icons.auto_awesome, size: 12, color: k.onAccent) : null, c, _color == value, spoken,
+        value == null ? Icon(Icons.auto_awesome, size: 12, color: ThemeData.estimateBrightnessForColor(c) == Brightness.dark ? Colors.white : k.ink) : null, c, _color == value, spoken,
         () => setState(() => _color = value));
     Future<void> openPicker() async {
       final chosen = await pickCustomColour(context,

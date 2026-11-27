@@ -17,10 +17,10 @@ const hostPalette = <Color>[
 ];
 
 /// [host]'s color: the one picked in its settings, else one fixed by its id, so two hosts differ without setup.
-Color hostColor(Host host) {
-  if (host.color case final c?) return Color(c);
-  final sum = host.id.codeUnits.fold(0, (a, b) => a + b);
-  return hostPalette[sum % hostPalette.length];
+/// With [k], a square or dot drawn on its ground is lifted to 3:1 (the saved value stays); without, the raw colour.
+Color hostColor(Host host, [Tokens? k]) {
+  final c = host.color != null ? Color(host.color!) : hostPalette[host.id.codeUnits.fold(0, (a, b) => a + b) % hostPalette.length];
+  return k == null ? c : readableOn(c, k.ground, minContrast: 3);
 }
 
 /// WCAG contrast of [a] over [b].

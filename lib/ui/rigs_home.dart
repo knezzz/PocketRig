@@ -360,7 +360,7 @@ class _RigsHomeState extends State<RigsHome> {
             // The host's list (Rescan, Restore all stopped rigs): the ⋯, or a long press.
             onLongPress: () => showHostActions(context, host),
             child: Row(children: [
-              Container(width: 10, height: 10, color: hostColor(host)),
+              Container(width: 10, height: 10, color: hostColor(host, Tokens.of(context))),
               const SizedBox(width: 8),
               Expanded(
                   child: Text(host.name.toUpperCase(),

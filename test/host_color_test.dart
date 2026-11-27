@@ -47,4 +47,19 @@ void main() {
     final host = Host(id: 'h', name: 'n', address: 'a', sshUser: 'u', color: 0xFF1E88E5);
     expect(hostColor(Host.fromJson(host.toJson())), const Color(0xFF1E88E5));
   });
+
+  test('on the dark ground every palette colour reaches 3:1, and the saved value is unchanged', () {
+    const k = Tokens.dark;
+    for (final c in hostPalette) {
+      final h = Host(id: 'x', name: 'n', address: 'a', sshUser: 'u', color: c.toARGB32());
+      expect(contrastRatio(hostColor(h, k), k.ground), greaterThanOrEqualTo(3), reason: '$c');
+      expect(h.color, c.toARGB32());
+    }
+  });
+
+  test('dark faint is 3:1 on ground and on fill', () {
+    const k = Tokens.dark;
+    expect(contrastRatio(k.faint, k.ground), greaterThanOrEqualTo(3));
+    expect(contrastRatio(k.faint, k.fill), greaterThanOrEqualTo(3));
+  });
 }

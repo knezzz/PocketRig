@@ -77,7 +77,11 @@ class PullRequest {
     this.changedFiles,
     this.additions,
     this.deletions,
+    this.isDraft = false,
   });
+
+  /// A draft PR (`gh pr view --json isDraft`).
+  final bool isDraft;
 
   /// The PR's size: files touched, lines added and removed (null: gh didn't say).
   final int? changedFiles;
@@ -106,7 +110,7 @@ class PullRequest {
 
   /// What [parse] reads, for `gh pr … --json`.
   static const fields =
-      'number,title,state,url,statusCheckRollup,reviewDecision,headRefName,baseRefName,changedFiles,additions,deletions';
+      'number,title,state,url,statusCheckRollup,reviewDecision,headRefName,baseRefName,changedFiles,additions,deletions,isDraft';
 
   int get checksTotal => checksPassed + checksFailed + checksPending;
 
@@ -184,6 +188,7 @@ class PullRequest {
       changedFiles: (j['changedFiles'] as num?)?.toInt(),
       additions: (j['additions'] as num?)?.toInt(),
       deletions: (j['deletions'] as num?)?.toInt(),
+      isDraft: j['isDraft'] == true,
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pocket_rig/data/rig_git.dart';
+import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/rig/rig_subline.dart';
 import 'package:pocket_rig/ui/theme.dart';
@@ -21,6 +22,19 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
   }
+
+  testWidgets('the agent count is the agents that are up: a stopped one is not counted, whatever view passes it', (tester) async {
+    final store = await installFakes();
+    RigGit.reset();
+    addTearDown(RigGit.reset);
+    final r = rigsWithSeatsFromFixture().firstWhere((r) => r.rig.id == 'r-adv');
+    final all = r.seats.where((s) => s.isAgent).length;
+    final up = r.seats.where((s) => s.isAgent && s.state != SeatState.stopped).length;
+    expect(up, lessThan(all), reason: 'the fixture rig has a stopped agent');
+    await tester.pumpWidget(MaterialApp(home: phone(store, Scaffold(body: RigSubLine(rig: r.rig, seats: r.seats, projectName: 'app')))));
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('$up ${up == 1 ? 'agent' : 'agents'}'), findsOneWidget);
+  });
 
   testWidgets('a PR with a failing check: branch, ↑, changed, PR #n state ↗, checks in the removed colour, and the agents', (tester) async {
     await open(tester, git: gitOutput.replaceFirst('"status":"IN_PROGRESS","conclusion":""', '"status":"COMPLETED","conclusion":"FAILURE"'));

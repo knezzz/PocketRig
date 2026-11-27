@@ -56,7 +56,8 @@ class _RigSubLineState extends State<RigSubLine> {
     final k = Tokens.of(context);
     final host = AppScope.of(context).active;
     final cwd = RigWithSeats(widget.rig, widget.seats).primaryCwd;
-    final agents = widget.seats.where((s) => s.isAgent).length;
+    // Agents that are up, as the Rigs home tally and the tiles count them, so the line reads the same in every view.
+    final agents = widget.seats.where((s) => s.isAgent && s.state != SeatState.stopped).length;
     final renamed = host?.rigNames[widget.rig.name] != null;
     final muted = mono(context, size: 12, color: k.muted);
     return Padding(

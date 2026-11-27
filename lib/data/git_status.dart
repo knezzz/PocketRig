@@ -10,7 +10,7 @@ class FileChange {
 
 /// One checkout from `git worktree list --porcelain`; the main one comes first.
 class Worktree {
-  Worktree(this.path, this.branch, {this.upstream, this.ahead = 0, this.behind = 0, this.changed = 0});
+  Worktree(this.path, this.branch, {this.upstream, this.ahead = 0, this.behind = 0, this.changed = 0, this.missing = false});
   final String path;
 
   /// The short branch name, or null when HEAD is detached.
@@ -23,6 +23,10 @@ class Worktree {
 
   /// Files changed or untracked, not yet committed.
   final int changed;
+
+  /// Git still lists it but its folder is gone (deleted by hand): `prunable` in the porcelain, or no folder at its path. It is
+  /// cleared with `git worktree prune`, not removed.
+  final bool missing;
 
   /// What's not on the remote yet: "pushed", "2 to push · 3 changed", "not pushed".
   String get pushState => [
@@ -39,6 +43,7 @@ class Worktree {
   static const _statusEach = r'''while IFS= read -r l; do
   echo "$l"
   case "$l" in "worktree "*)
+    [ -d "${l#worktree }" ] || echo "missing 1"
     s=$(git -C "${l#worktree }" status --porcelain=v2 --branch 2>/dev/null)
     printf '%s\n' "$s" | grep -E '^# branch\.(upstream|ab) '
     echo "changed $(printf '%s\n' "$s" | grep -cv -e '^#' -e '^$')" ;;
@@ -57,6 +62,7 @@ done''';
               ahead: int.tryParse(RegExp(r'^# branch\.ab \+(\d+)', multiLine: true).firstMatch(block)?.group(1) ?? '') ?? 0,
               behind: int.tryParse(RegExp(r'^# branch\.ab \S+ -(\d+)', multiLine: true).firstMatch(block)?.group(1) ?? '') ?? 0,
               changed: int.tryParse(RegExp(r'^changed (\d+)', multiLine: true).firstMatch(block)?.group(1) ?? '') ?? 0,
+              missing: RegExp(r'^(prunable|missing 1)', multiLine: true).hasMatch(block),
             ),
       ];
 }

@@ -9,6 +9,7 @@ import 'api/openrig_client.dart';
 import 'data/chat_cache.dart';
 import 'data/media_cache.dart';
 import 'data/drafts.dart';
+import 'data/fleet.dart' show fleet;
 import 'data/outbox.dart';
 import 'data/push.dart';
 import 'data/host_store.dart';
@@ -114,6 +115,7 @@ class _PocketRigAppState extends State<PocketRigApp> {
     super.initState();
     // Here, not in main(): the demo build has its own main, and its first menu would open at the window's top left.
     trackMenuAnchor();
+    fleet.remember = widget.store.rememberFolders;
     if (Platform.isIOS || Platform.isAndroid) _push;
   }
 

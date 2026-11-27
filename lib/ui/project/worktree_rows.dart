@@ -16,6 +16,7 @@ class WorktreeHead extends StatelessWidget {
     this.busy = false,
     this.onOpen,
     this.onMenu,
+    this.onRemove,
   });
   final String title;
   final bool main;
@@ -25,18 +26,23 @@ class WorktreeHead extends StatelessWidget {
   final VoidCallback? onOpen;
   final VoidCallback? onMenu;
 
+  /// A worktree git lists but whose folder is gone: greyed, 'missing', and this clears it from the list (git worktree prune)
+  /// in place of the ⋯.
+  final VoidCallback? onRemove;
+
   @override
   Widget build(BuildContext context) {
     final k = Tokens.of(context);
     final w = worktree;
+    final gone = w?.missing ?? false;
     final pr = this.pr;
     // A section header, not a row: no fill, the name then a hairline; the ⋯ stays at the right.
     return Semantics(
       header: true,
       child: InkWell(
-        onTap: onOpen,
-        onLongPress: onMenu,
-        onSecondaryTap: onMenu,
+        onTap: gone ? null : onOpen,
+        onLongPress: gone ? null : onMenu,
+        onSecondaryTap: gone ? null : onMenu,
         child: ConstrainedBox(
           constraints: const BoxConstraints(minHeight: 44),
           child: Padding(
@@ -46,7 +52,14 @@ class WorktreeHead extends StatelessWidget {
               GroupHeader(
                 icon: main ? Icons.home_outlined : Icons.call_split,
                 title: title,
-                trailing: busy
+                gone: gone,
+                trailing: gone
+                    // Aligned right with the ⋯ column of the rows below.
+                    ? TextButton(
+                        onPressed: busy ? null : onRemove,
+                        style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: 8), foregroundColor: k.muted).merge(compactAction),
+                        child: const Text('Remove from list'))
+                    : busy
                     ? const SizedBox(
                         width: 48,
                         height: 44,
@@ -64,14 +77,16 @@ class WorktreeHead extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(left: 20, top: 2),
                   child: Text(
-                      [
-                        w.branch ?? 'detached HEAD',
-                        if (w.pushState.isNotEmpty) w.pushState,
-                        if (pr == null) 'no PR',
-                      ].join(' · '),
+                      gone
+                          ? 'missing: its folder is gone (${w.branch ?? 'detached HEAD'})'
+                          : [
+                              w.branch ?? 'detached HEAD',
+                              if (w.pushState.isNotEmpty) w.pushState,
+                              if (pr == null) 'no PR',
+                            ].join(' · '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: mono(context, size: 11)),
+                      style: mono(context, size: 11, color: gone ? goneColor(k) : null)),
                 ),
               if (pr != null)
                 Padding(

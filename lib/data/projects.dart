@@ -11,6 +11,13 @@ import 'needs_you.dart';
 int projectGroup(Project p) =>
     isHomeFolder(p.path) ? 2 : (p.path != '(no folder)' && (p.pinned || p.rigs.isNotEmpty) ? 0 : 1);
 
+/// The folders of [projects] to keep in the host's list from now on: where a rig, an agent or a shell was seen, so the folder stays
+/// (greyed) when the last one stops, until the person removes it. Not the home folder, not agents with no folder, not one already pinned.
+List<String> foldersToRemember(List<Project> projects) => [
+      for (final p in projects)
+        if (!p.pinned && p.path != '(no folder)' && !isHomeFolder(p.path) && !p.nothingHere) p.path
+    ];
+
 List<Project> groupIntoProjects(List<RigWithSeats> rigs, List<String> pinned,
     [List<LooseAgent> loose = const [], List<AttentionItem> attention = const [], List<ProjectShell> allShells = const []]) {
   // One tmux session, one row: a shell session that an agent runs in (it was started in the shell) is the agent's row.

@@ -82,6 +82,25 @@ ActionRows projectActionRows(BuildContext context, String path,
   ], danger: const []);
 }
 
+/// The x on a greyed (empty) project folder: after a confirm, takes it out of the project list. The folder itself is untouched;
+/// an agent that runs there again brings it back. [onRemoved] runs after (the sidebar leaves a project it had open).
+Future<void> removeFolder(BuildContext context, Host host, String path, {VoidCallback? onRemoved}) async {
+  final store = AppScope.read(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final k = Tokens.of(context);
+  final name = projectNameOf(path);
+  if (!await confirmSheet(context,
+      title: 'Remove $name from the list?',
+      body: 'Nothing runs in it. Only the entry here goes, not the folder; an agent that runs there again brings it back.',
+      action: 'Remove',
+      destructive: false)) {
+    return;
+  }
+  await store.unpinFolder(host, path);
+  onRemoved?.call();
+  toastOn(messenger, k, 'Removed $name from the list', kind: ToastKind.info);
+}
+
 /// A running project shell's ⋯ list: open its terminal, or close the session (after a confirm).
 Future<void> showShellActions(BuildContext context, Host host, ProjectShell s) => showActionRows(context, host.shellLabel(s.name), (
       items: [

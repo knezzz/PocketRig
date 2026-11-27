@@ -19,11 +19,11 @@ import 'host_actions.dart' show hostActionRows;
 import 'hosts/host_editor.dart' show HostEditor;
 import 'hosts_screen.dart' show HostsScreen;
 import 'common.dart' show useHost;
-import 'project_actions.dart' show openShell, showProjectActions, showShellActions;
+import 'project_actions.dart' show openShell, removeFolder, showProjectActions, showShellActions;
 import 'project_screen.dart';
 import 'chat_screen.dart' show opensAsChat, seatScreen;
 import '../data/projects.dart' show groupByWorktree;
-import 'kit.dart' show HoverBuilder, NavRow, ShellMenu, panelRouteName, navFillInset, navMouse, navSideInset, navSlotW, navIconGap, navTrailW, navRowTop, navNameLineH, navSecondLineH;
+import 'kit.dart' show HoverBuilder, RemoveX, goneColor, NavRow, ShellMenu, panelRouteName, navFillInset, navMouse, navSideInset, navSlotW, navIconGap, navTrailW, navRowTop, navNameLineH, navSecondLineH;
 import 'loose_agent_screen.dart' show openLooseAgent, showLooseActions;
 import 'terminal_screen.dart' show TerminalScreen;
 import '../terminal/transport.dart' show SeatTarget;
@@ -913,14 +913,21 @@ class _ProjectGroup extends StatelessWidget {
     }
 
     final working = t.counts[Status.working] ?? 0, waiting = t.counts[Status.needsYou] ?? 0;
+    final empty = p.nothingHere;
+    final shell = context.findAncestorStateOfType<_AppShellState>();
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
       SizedBox(height: gapAbove),
       _Row(
         level: _Level.project,
         // As on the Rigs home: orange when an agent needs you, green when some work, grey otherwise.
-        leading: AppIcon(AppIconKind.folder, size: 16, color: folderColor(k, needs: t.needs, working: t.working)),
+        leading: AppIcon(AppIconKind.folder, size: 16, color: empty ? goneColor(k) : folderColor(k, needs: t.needs, working: t.working)),
         label: p.name,
-        words: t.words(),
+        words: empty ? 'nothing running' : t.words(),
+        // A folder with nothing in it stays, greyed, until the x (after a confirm) takes it out of the list.
+        gone: empty,
+        onRemove: empty
+            ? () => removeFolder(context, host, p.path, onRemoved: () => shell?._unpinned(p.path))
+            : null,
         tally: working + waiting == 0
             ? null
             : Text.rich(TextSpan(style: mono(context, color: k.muted), children: [
@@ -1290,6 +1297,8 @@ class _Row extends StatelessWidget {
     this.onFold,
     this.onMore,
     this.moreButton = true,
+    this.gone = false,
+    this.onRemove,
   });
   final _Level? level;
   final int depth;
@@ -1317,6 +1326,13 @@ class _Row extends StatelessWidget {
   /// The second line: the worktree this row runs in (its glyph and name, muted), from the name's column. Null in the main checkout.
   final String? wtLine;
   final String label;
+
+  /// A greyed row (goneColor): it stands for something that is not there, a folder with nothing running.
+  final bool gone;
+
+  /// The x that removes a [gone] row from its list: shown when the row is hovered with a mouse, always for a finger (the caller
+  /// confirms). It takes the trailing column the fold chevron would.
+  final VoidCallback? onRemove;
 
   /// Drawn in place of the label's text (the host's usage strip); [label] still says it to a screen reader.
   final Widget? body;
@@ -1434,7 +1450,7 @@ class _Row extends StatelessWidget {
                           Flexible(
                             child: body ?? Text(level == _Level.host ? label.toUpperCase() : label,
                                 style: _labelStyle(context, level, color: labelColor, strong: onPath || selected)
-                                    .copyWith(color: level == null || level == _Level.agent ? labelColor : null, fontSize: compact ? 11 : null),
+                                    .copyWith(color: gone ? goneColor(k) : (level == null || level == _Level.agent ? labelColor : null), fontSize: compact ? 11 : null),
                                 overflow: TextOverflow.ellipsis),
                           ),
                           if (worktree != null) ...[const SizedBox(width: 6), WorktreeChip(worktree!)],
@@ -1483,6 +1499,12 @@ class _Row extends StatelessWidget {
                                         ),
                                       ),
                                     )
+                                  : onRemove != null
+                                      ? Opacity(
+                                          opacity: hovered || selected || !_mouse() ? 1 : 0,
+                                          child: IgnorePointer(
+                                              ignoring: _mouse() && !(hovered || selected),
+                                              child: RemoveX(tooltip: 'Remove $label from the list', onPressed: onRemove, width: navTrailW(), height: tapH)))
                                   : (onMore != null && moreButton && _mouse())
                                       ? Opacity(
                                           opacity: hovered || selected ? 1 : 0,

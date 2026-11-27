@@ -269,6 +269,26 @@ class _ProjectScreenState extends State<ProjectScreen> with Polling {
     if (done && mounted) await load();
   }
 
+  /// Clears worktrees whose folder is gone from git's list (`git worktree prune` in the repo): the way out for a missing one, which
+  /// can't be deleted since there is nothing to delete.
+  Future<void> _clearMissing(Worktree w) async {
+    final host = AppScope.read(context).active;
+    final main = _worktrees?.firstOrNull;
+    if (host == null || main == null || identical(w, main)) return;
+    setState(() => _busy.add(w.path));
+    SshExec? ssh;
+    try {
+      ssh = await SshExec.connect(host);
+      await ssh.pruneWorktrees(main.path);
+      if (mounted) await load();
+    } catch (e) {
+      if (mounted) toast(context, 'Couldn\'t clear ${w.name}: ${e is OpenRigException ? e.message : e}', kind: ToastKind.problem);
+    } finally {
+      ssh?.close();
+      if (mounted) setState(() => _busy.remove(w.path));
+    }
+  }
+
   /// Deny or Allow once on a waiting seat, without opening it.
   Future<void> _answerSeat(Seat s, {required bool allow}) async {
     final host = AppScope.read(context).active;
@@ -600,6 +620,7 @@ class _ProjectScreenState extends State<ProjectScreen> with Polling {
                   busy: _busy.contains(w.path),
                   onOpen: () => _openWorktree(w),
                   onMenu: () => _worktreeMenu(w, i == 0, agents),
+                  onRemove: w.missing && i != 0 ? () => _clearMissing(w) : null,
                 ),
                 children: [
                   for (final r in rigsHere) rigRow(r),

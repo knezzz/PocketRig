@@ -204,6 +204,15 @@ class HostStore extends ChangeNotifier {
     await _save();
   }
 
+  /// Keeps [paths] (absolute, as the host's agents report them) in the host's project list, as a pin does: the list holds a
+  /// folder where something ran until the person removes it. Saves only when one is new.
+  Future<void> rememberFolders(Host host, List<String> paths) async {
+    final fresh = [for (final p in paths) if (!host.pinnedFolders.contains(p)) p];
+    if (fresh.isEmpty) return;
+    host.pinnedFolders.addAll(fresh);
+    await _save();
+  }
+
   Future<void> unpinFolder(Host host, String path) async {
     host.pinnedFolders.remove(path);
     await _save();

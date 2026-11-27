@@ -417,6 +417,8 @@ class HostFeed extends ChangeNotifier {
       if (scan) scannedAt = now;
       _notify();
       fleet._reported(this);
+      // Only on a complete answer: a partial one lists fewer agents, and the list only grows here.
+      if (complete) fleet.remember?.call(host, foldersToRemember(projects));
     } catch (e) {
       if (!current()) return;
       error = e.toString();
@@ -545,6 +547,9 @@ enum RigView { collapsed, active, all }
 /// A feed per stored host. Screens ask for the feeds of the hosts they show
 /// and listen to them; a feed polls only while something listens.
 class Fleet extends ChangeNotifier {
+  /// Keeps the folders where something ran in the host's project list (the app sets it to the host store's).
+  Future<void> Function(Host host, List<String> folders)? remember;
+
   final Map<String, HostFeed> _feeds = {};
 
   /// Hosts and worktree groups folded shut (they start open); kept while the app runs.

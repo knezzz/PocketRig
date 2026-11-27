@@ -22,7 +22,7 @@ import 'needs_you_banner.dart' show inboxRequests;
 import 'page_column.dart';
 import 'host_actions.dart' show showHostActions;
 import 'usage_strip.dart' show HostUsageBar, HostUsageLine;
-import 'project_actions.dart' show openShell, showProjectActions;
+import 'project_actions.dart' show openShell, removeFolder, showProjectActions;
 import 'project_screen.dart' show ProjectScreen;
 import 'project_tally.dart';
 import 'recent_screen.dart' show RecentScreen;
@@ -284,6 +284,8 @@ class _RigsHomeState extends State<RigsHome> {
 
   /// A project's tier: its most urgent visible item. Null when it has none (only stopped rigs): it is not listed.
   int? _projectTier(Host host, Project p) {
+    // A folder kept with nothing in it: listed last, greyed, with its x (it is not 'something running').
+    if (p.nothingHere) return 4;
     final tiers = [
       for (final r in _runningRigs(p)) rigTier(r),
       for (final a in _looseShown(host, p)) looseTier(host, a),
@@ -307,7 +309,7 @@ class _RigsHomeState extends State<RigsHome> {
       hosts.isNotEmpty &&
       hosts.every((h) {
         final f = fleet.feedFor(h);
-        return f.loaded && f.error == null && !f.projects.any((p) => _projectTier(h, p) != null);
+        return f.loaded && f.error == null && !f.projects.any((p) => _projectTier(h, p) != null && !p.nothingHere);
       });
 
   /// Nothing is running: a quiet note, with the ways to start something.
@@ -441,21 +443,34 @@ class _RigsHomeState extends State<RigsHome> {
             detailNavigator(context).push(MaterialPageRoute<void>(builder: (_) => ProjectScreen(path: p.path)));
           },
           onLongPress: more,
-          child: Row(children: [
-            // Orange when an agent needs you, green when some work, grey when it is empty or idle.
-            AppIcon(AppIconKind.folder, size: 18, color: folderColor(k, needs: t.needs, working: t.working)),
+          child: HoverBuilder(builder: (context, hovered) => Row(children: [
+            // Orange when an agent needs you, green when some work, grey when it is empty or idle; a folder kept with nothing in it
+            // is greyed all through (goneColor) until the x takes it out.
+            AppIcon(AppIconKind.folder, size: 18, color: p.nothingHere ? goneColor(k) : folderColor(k, needs: t.needs, working: t.working)),
             const SizedBox(width: 8),
-            Flexible(child: Text(heading.title, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700))),
+            Flexible(
+                child: Text(heading.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: p.nothingHere ? goneColor(k) : null))),
             const SizedBox(width: 8),
             Expanded(
-                child: Text(heading.sub, maxLines: 1, overflow: TextOverflow.ellipsis, style: mono(context, size: 12, color: k.muted))),
+                child: Text(p.nothingHere ? 'nothing running · ${heading.sub}' : heading.sub,
+                    maxLines: 1, overflow: TextOverflow.ellipsis, style: mono(context, size: 12, color: p.nothingHere ? goneColor(k) : k.muted))),
             if (t.needs > 0) Text('${t.needs}', style: mono(context, size: 12, color: k.accent, weight: FontWeight.w700)),
+            // The x: on a hover with a mouse, always for a finger (after a confirm).
+            if (p.nothingHere)
+              Opacity(
+                  opacity: hovered || !navMouse() ? 1 : 0,
+                  child: IgnorePointer(
+                      ignoring: navMouse() && !hovered,
+                      child: RemoveX(tooltip: 'Remove ${p.name} from the list', onPressed: () => removeFolder(context, host, p.path)))),
             IconButton(
                 tooltip: 'Actions for ${p.name}',
                 visualDensity: VisualDensity.compact,
                 onPressed: more,
                 icon: Icon(Icons.more_horiz, size: 18, color: k.muted)),
-          ]),
+          ])),
         ),
       ),
       for (final r in rigs) _rigCard(context, host, p, r),

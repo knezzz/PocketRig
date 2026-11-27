@@ -795,6 +795,9 @@ class Project {
   /// The folder's name; 'Home' for the home folder (its path, '~', is the line under it).
   String get name => isHomeFolder(path) ? 'Home' : folderName(path);
 
+  /// A folder kept in the list with no rig, agent or shell in it: shown greyed until the person removes it.
+  bool get nothingHere => path != '(no folder)' && rigs.isEmpty && loose.isEmpty && shells.isEmpty;
+
   /// How many needs-you items are in this project: set by `groupIntoProjects`, which orders cards by it.
   int attention = 0;
 }

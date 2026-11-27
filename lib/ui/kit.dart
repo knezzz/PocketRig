@@ -404,7 +404,10 @@ class Section extends StatelessWidget {
 /// A group's header line: icon, mono name, then a hairline up to [trailing]. The caller owns the tap, fold and
 /// padding around it. [nameShare] is how much of the line the name may take; the hairline gets the rest.
 class GroupHeader extends StatelessWidget {
-  const GroupHeader({super.key, required this.icon, required this.title, this.trailing, this.nameShare = 0.6});
+  const GroupHeader({super.key, required this.icon, required this.title, this.trailing, this.nameShare = 0.6, this.gone = false});
+
+  /// Greyed (goneColor): what it heads is not there.
+  final bool gone;
   final IconData icon;
   final String title;
   final Widget? trailing;
@@ -414,14 +417,14 @@ class GroupHeader extends StatelessWidget {
     final k = Tokens.of(context);
     return LayoutBuilder(
       builder: (context, box) => Row(children: [
-        Icon(icon, size: 14, color: k.muted),
+        Icon(icon, size: 14, color: gone ? goneColor(k) : k.muted),
         const SizedBox(width: 6),
         ConstrainedBox(
           constraints: BoxConstraints(maxWidth: box.maxWidth * nameShare),
           child: Text(title,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: sectionLabelStyle(context, size: 12)),
+              style: sectionLabelStyle(context, size: 12).copyWith(color: gone ? goneColor(k) : null)),
         ),
         Expanded(
             child: Padding(
@@ -431,6 +434,31 @@ class GroupHeader extends StatelessWidget {
       ]),
     );
   }
+}
+
+/// The greyed look of a row that stands for something that is not there (a folder with nothing running, a worktree git says is
+/// gone): faint text and icon. One style for every such row; the caller says why in words and offers [RemoveX] or a
+/// 'Remove from list' button.
+Color goneColor(Tokens k) => k.faint;
+
+/// The x that takes a greyed row out of its list.
+class RemoveX extends StatelessWidget {
+  const RemoveX({super.key, required this.tooltip, required this.onPressed, this.width = 32, this.height = 32});
+  final String tooltip;
+  final VoidCallback? onPressed;
+  final double width;
+  final double height;
+  @override
+  Widget build(BuildContext context) => Center(
+        child: IconButton(
+          tooltip: tooltip,
+          padding: EdgeInsets.zero,
+          constraints: BoxConstraints.tightFor(width: width, height: height),
+          style: IconButton.styleFrom(minimumSize: Size(width, height), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+          onPressed: onPressed,
+          icon: Icon(Icons.close, size: 16, color: Tokens.of(context).muted),
+        ),
+      );
 }
 
 /// The actions pinned under a screen or sheet: an optional [primary] in the success green, wider than the rest, then

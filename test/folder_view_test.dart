@@ -88,7 +88,7 @@ void main() {
             matching: find.byWidgetPredicate((w) => w is AppIcon && w.kind == AppIconKind.folder)))
         .color;
     expect(folder('bars'), Tokens.light.accent, reason: 'an agent needs you: orange');
-    expect(folder('dotfiles'), Tokens.light.muted, reason: 'nothing runs there');
+    expect(folder('dotfiles'), Tokens.light.faint, reason: 'nothing runs there: the greyed, kept folder');
   });
 
   testWidgets('a project lists its rigs needs you, working, then idle, by name inside a tier: never by activity', (tester) async {

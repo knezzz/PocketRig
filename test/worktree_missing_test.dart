@@ -4,12 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pocket_rig/data/git_status.dart';
 import 'package:pocket_rig/data/projects.dart';
-import 'package:pocket_rig/main.dart';
 import 'package:pocket_rig/ssh/ssh_exec.dart';
 import 'package:pocket_rig/ui/project/worktree_rows.dart' show WorktreeHead;
 import 'package:pocket_rig/ui/theme.dart';
 
-import 'golden/fixtures.dart';
 
 void main() {
   group('with a real repo (a temp one, never a real one)', () {

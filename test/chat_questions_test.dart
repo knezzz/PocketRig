@@ -125,6 +125,9 @@ void main() {
   testWidgets('QuestionCard shows one question at a time and sends once each has an answer', (tester) async {
     List<Set<int>>? sent;
     List<String?>? words;
+    tester.view.physicalSize = const Size(400, 900); // a phone's card: the buttons share its width (a wide card keeps their size)
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     await tester.pumpWidget(MaterialApp(
       home: Scaffold(
         body: SingleChildScrollView(

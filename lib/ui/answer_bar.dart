@@ -73,12 +73,7 @@ class AnswerBar extends StatelessWidget {
       ...extras,
     ];
     return Column(crossAxisAlignment: CrossAxisAlignment.stretch, mainAxisSize: MainAxisSize.min, children: [
-      Row(children: [
-        Expanded(child: outlined('Deny', onDeny)),
-        if (onAlways != null) ...[const SizedBox(width: 8), Expanded(child: outlined('Always', onAlways))],
-        const SizedBox(width: 8),
-        Expanded(child: allow),
-      ]),
+      ButtonRow(left: [outlined('Deny', onDeny), if (onAlways != null) outlined('Always', onAlways)], right: allow),
       if (onAlways != null && alwaysScope != null)
         Padding(
           padding: const EdgeInsets.only(top: 6),
@@ -91,6 +86,31 @@ class AnswerBar extends StatelessWidget {
         ),
     ]);
   }
+}
+
+/// A card's buttons: on a narrow card (a phone) they share its width, [left] ones and the [right] one (the one that goes ahead,
+/// [rightFlex] times as wide); on a wide one they keep their size (140 and 160) and hug the edges: the others at the left, the
+/// one that goes ahead at the right, not stretched across the card.
+class ButtonRow extends StatelessWidget {
+  const ButtonRow({super.key, required this.left, required this.right, this.rightFlex = 1});
+  final List<Widget> left;
+  final Widget right;
+  final int rightFlex;
+
+  /// Wider than this a card is not a phone's.
+  static const wide = 480.0;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(builder: (context, box) {
+        final spread = box.maxWidth <= wide;
+        return Row(children: [
+          for (final b in left) ...[
+            if (spread) Expanded(child: b) else SizedBox(width: 140, child: b),
+            const SizedBox(width: 8),
+          ],
+          if (spread) Expanded(flex: rightFlex, child: right) else ...[const Spacer(), SizedBox(width: 160, child: right)],
+        ]);
+      });
 }
 
 class _Link extends StatelessWidget {

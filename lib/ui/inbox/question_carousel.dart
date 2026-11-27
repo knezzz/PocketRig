@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
+import '../answer_bar.dart' show ButtonRow;
 import '../chat/question_card.dart';
 import '../kit.dart';
 import '../theme.dart';
@@ -151,28 +152,25 @@ class _QuestionCarouselState extends State<QuestionCarousel> {
           ]),
         ),
         const SizedBox(height: 10),
-        Row(children: [
-          Expanded(
-            child: OutlinedButton(
+        ButtonRow(
+          rightFlex: 2,
+          left: [
+            OutlinedButton(
               onPressed: _off ? null : widget.onDecline,
               style: OutlinedButton.styleFrom(side: BorderSide(color: k.border), padding: const EdgeInsets.symmetric(horizontal: 8)),
               child: Text(n > 1 ? 'Decline all' : 'Decline', maxLines: 1, softWrap: false),
             ),
+          ],
+          right: FilledButton(
+            onPressed: _off || !ready
+                ? null
+                : last
+                    ? _send
+                    : () => setState(() => _at++),
+            style: FilledButton.styleFrom(),
+            child: Text(last ? (n > 1 ? 'Send answers' : 'Send answer') : 'Next question'),
           ),
-          const SizedBox(width: 8),
-          Expanded(
-            flex: 2,
-            child: FilledButton(
-              onPressed: _off || !ready
-                  ? null
-                  : last
-                      ? _send
-                      : () => setState(() => _at++),
-              style: FilledButton.styleFrom(),
-              child: Text(last ? (n > 1 ? 'Send answers' : 'Send answer') : 'Next question'),
-            ),
-          ),
-        ]),
+        ),
       ]),
     );
   }

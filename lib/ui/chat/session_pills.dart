@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../theme.dart';
 
+/// The chat's side inset: the transcript, the session pills and the permission card above the composer all start 20 in, so
+/// their edges line up.
+const chatGutter = 20.0;
+
 /// The row of pills over the composer.
 class SessionPills extends StatelessWidget {
   const SessionPills({super.key, required this.pills});
@@ -11,8 +15,7 @@ class SessionPills extends StatelessWidget {
     final k = Tokens.of(context);
     return Container(
       decoration: BoxDecoration(color: k.ground, border: Border(top: BorderSide(color: k.divider))),
-      // 16 in: the permission card above the composer has the same margin, so their edges line up.
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      padding: const EdgeInsets.fromLTRB(chatGutter, 8, chatGutter, 0),
       height: 38,
       child: Semantics(
         container: true,

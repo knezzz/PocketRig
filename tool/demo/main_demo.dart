@@ -115,8 +115,21 @@ void _moreFixtures() {
   ];
 }
 
+/// The five shells conveyor's 'impl' waits on, the first its 'dev server' (which the Shells page's output tail belongs to).
+String _implJobs(String snap) => [
+      for (final (i, (age, cmd)) in [
+        ('00:41:00', 'dev server'),
+        ('00:38:00', 'storybook'),
+        ('00:25:00', 'test --watch'),
+        ('00:19:00', 'docker compose up db'),
+        ('00:03:00', 'tail -f logs/app.log'),
+      ].indexed)
+        "J\t${4201 + i * 10}\tS\t$age\t0.0\t0\t$snap '$cmd' < /dev/null && pwd -P >| /tmp/pwd\n",
+    ].join();
+
 /// The host scan with what a real one finds besides the loose agents: a running subagent under the working Claude agent
-/// 'attacker' and a shell it started (flutter run), conveyor's idle 'impl' waiting on a 'dev server' shell, the loose
+/// 'attacker' and a shell it started (flutter run), conveyor's idle 'impl' waiting on five shells (a list capped at three and
+/// '+2 more'), the loose
 /// 'codex-fix' waiting on 'npm run dev', and a project shell in each of two projects.
 Future<String> _demoScan(String cmd) async {
   // The Shells page and pane ask for one agent's processes (AgentJob.script: `set -- '<session>' <lines>; …`): the same shells the
@@ -126,7 +139,7 @@ Future<String> _demoScan(String cmd) async {
   if (asked != null) {
     const snap = 'zsh -c source /Users/me/.claude/shell-snapshots/snapshot.sh && eval';
     return switch (asked.group(1)) {
-      'impl@conveyor' => "J\t4201\tS\t00:41:00\t0.0\t0\t$snap 'dev server' < /dev/null && pwd -P >| /tmp/pwd\n"
+      'impl@conveyor' => "${_implJobs(snap)}"
           'O\t4201\t2048\tlistening on http://localhost:8080\n'
           'L\t4201\tcompiled 212 modules in 3.1s\nL\t4201\tlistening on http://localhost:8080\n',
       'codex-fix' => "J\t4301\tS\t00:12:00\t0.0\t0\t$snap 'npm run dev' < /dev/null && pwd -P >| /tmp/pwd\n"
@@ -142,10 +155,10 @@ Future<String> _demoScan(String cmd) async {
   final subs = '@@sub\tsess-attacker\ta1\t${_ago(const Duration(minutes: 2))}\t${now.millisecondsSinceEpoch ~/ 1000}\t'
       '/h/.claude/projects/p/sess-attacker/subagents/agent-a1.jsonl\n'
       '{"agentType":"general-purpose","description":"Check the diff for races"}';
-  const jobs = "@@jobs\tattacker@adversarial-review:$app\n"
+  final jobs = "@@jobs\tattacker@adversarial-review:$app\n"
       "J\t4101\tS\t02:10:00\t0.0\t0\tzsh -c source /Users/me/.claude/shell-snapshots/snapshot.sh && eval 'flutter run -d macos' < /dev/null && pwd -P >| /tmp/pwd\n"
       '@@jobs\timpl@conveyor:$app\n'
-      "J\t4201\tS\t00:41:00\t0.0\t0\tzsh -c source /Users/me/.claude/shell-snapshots/snapshot.sh && eval 'dev server' < /dev/null && pwd -P >| /tmp/pwd\n"
+      "${_implJobs('zsh -c source /Users/me/.claude/shell-snapshots/snapshot.sh && eval')}"
       '@@jobs\tcodex-fix:$app\n'
       "J\t4301\tS\t00:12:00\t0.0\t0\tzsh -c source /Users/me/.claude/shell-snapshots/snapshot.sh && eval 'npm run dev' < /dev/null && pwd -P >| /tmp/pwd\n"
       '@@jobs\trp-app:$app\n'

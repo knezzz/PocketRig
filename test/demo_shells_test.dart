@@ -9,9 +9,12 @@ void main() {
     await demoSetup();
     final ssh = await SshExec.connect(homelab);
     final impl = await ssh.agentJobs('impl@conveyor', lines: 20);
-    expect([for (final j in impl.where((j) => j.isShell)) j.short], ['dev server']);
-    expect(impl.single.output, contains('listening on http://localhost:8080'), reason: 'with its output tail');
-    expect(impl.single.elapsed, const Duration(minutes: 41));
+    expect([for (final j in impl.where((j) => j.isShell)) j.short],
+        unorderedEquals(['dev server', 'storybook', 'test --watch', 'docker compose up db', 'tail -f logs/app.log']));
+    expect(impl.where((j) => j.isShell), hasLength(5), reason: 'the live check of the 3 + \'+2 more\' cap');
+    final dev = impl.firstWhere((j) => j.short == 'dev server');
+    expect(dev.output, contains('listening on http://localhost:8080'), reason: 'with its output tail');
+    expect(dev.elapsed, const Duration(minutes: 41));
     final codex = await ssh.agentJobs('codex-fix', lines: 20);
     expect([for (final j in codex) j.short], ['npm run dev']);
     expect(await ssh.agentJobs('lead@conveyor', lines: 20), isEmpty);

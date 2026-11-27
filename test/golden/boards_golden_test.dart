@@ -455,6 +455,12 @@ void main() {
     _board('2d_rig_work', '2d · Rig › Work', () => WorkScreen(rig: rigFromFixture('r-conveyor')));
     _board('3a_seat_chat', '3a · Seat chat',
         () => ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'lead'), asChat: true));
+    // A Mac window: the chat fills the area, and the permission card's buttons keep their size (Deny and Always at the left,
+    // Allow once at the right edge).
+    _board('3f_chat_wide_permission', '3 · Chat, 1280 wide · permission', () {
+      showLoose = true;
+      return ChatScreen(rigName: 'no rig', seat: scratchAgent().toSeat(), loose: scratchAgent(), rigs: rigsWithSeatsFromFixture(), asChat: true);
+    }, width: 1280, height: 720);
     // The ⋯ menu as one action sheet: a loose agent's chat menu (terminal, details, red Kill agent) ...
     _board('3e_chat_menu_loose', '3 · Chat menu · agent outside a rig', () {
       showLoose = true;

@@ -732,7 +732,7 @@ class _ChatPageState extends State<ChatPage> {
         controller: _scroll,
         reverse: true,
         keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-        padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+        padding: const EdgeInsets.fromLTRB(chatGutter, 16, chatGutter, 8),
         itemCount: rows.length,
         itemBuilder: (_, i) => rows[rows.length - 1 - i],
         // New messages shift every index; follow keys so an open tool group stays open.

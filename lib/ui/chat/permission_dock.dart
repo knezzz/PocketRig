@@ -6,6 +6,7 @@ import '../../data/host_store.dart' show isDesktop;
 import '../answer_bar.dart';
 import '../permission_card.dart';
 import '../theme.dart';
+import 'session_pills.dart' show chatGutter;
 
 /// The keys that answer a pending permission on desktop: ⌘↵ (Ctrl+↵ off a
 /// Mac) allows once, Esc denies.
@@ -68,7 +69,7 @@ class PermissionDock extends StatelessWidget {
       ask: ask,
       note: note,
       semanticsLabel: 'Permission request: $question',
-      margin: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      margin: const EdgeInsets.fromLTRB(chatGutter, 6, chatGutter, 10),
       trailing: mode == null ? null : Text('mode: ${mode!.toLowerCase()}', style: mono(context, size: 11)),
       answer: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
         bar,

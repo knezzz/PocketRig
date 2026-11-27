@@ -8,6 +8,7 @@ import 'page_column.dart';
 import '../data/fleet.dart';
 import '../data/git_status.dart';
 import '../data/host_store.dart' show isDesktop;
+import '../data/rig_git.dart';
 import '../data/rig_spec_source.dart';
 import '../main.dart';
 import '../models.dart';
@@ -64,10 +65,11 @@ class _RigScreenState extends State<RigScreen> with Polling {
   List<Seat> _seats = [];
   List<QueueItem> _queue = [];
   RigTopology? _topology;
-  GitStatus? _git;
-  String? _gitError;
-  bool _gitLoading = false;
-  int _gitTries = 0;
+  /// The rig folder's git and PR: the one reading every view of this rig shares ([RigGit]).
+  RigGit? _feed;
+  GitStatus? get _git => _feed?.value;
+  String? get _gitError => _feed?.error;
+  bool get _gitLoading => _feed?.loading ?? false;
   final List<RigEvent> _events = [];
   String? _error;
   /// Any action on this rig, from any trigger (its ⋯, a project row, the sidebar), or the spec editor.
@@ -98,7 +100,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
       if (AppScope.read(context).active case final host?) _unfocus = fleet.feedFor(host).focus(_rig.id);
       _listen(replay: 20);
       _loadTopology();
-      _loadGit();
+      _bindGit();
     });
   }
 
@@ -114,6 +116,8 @@ class _RigScreenState extends State<RigScreen> with Polling {
     _unfocus?.call();
     _eventSub?.cancel();
     _reconnect?.cancel();
+    _feed?.removeListener(_onGit);
+    _feed?.unlisten();
     super.dispose();
   }
 
@@ -139,6 +143,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
         _error = null;
       });
       if (changedShape) _loadTopology();
+      _bindGit();
       _loadModes();
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());
@@ -169,36 +174,21 @@ class _RigScreenState extends State<RigScreen> with Polling {
     } catch (_) {/* graph falls back to seats without edges */}
   }
 
-  Future<void> _loadGit() async {
+  /// Listens to the shared reading of the rig's folder once the seats say where the rig works.
+  void _bindGit() {
     final host = AppScope.read(context).active;
     final cwd = RigWithSeats(_rig, _seats).primaryCwd;
-    if (host == null) return;
-    if (cwd == null) {
-      // Seats haven't loaded yet: try again once they have.
-      if (_seats.isEmpty && _gitTries++ < 10) {
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted && _git == null) _loadGit();
-        });
-      }
-      return;
-    }
-    setState(() => _gitLoading = true);
-    SshExec? ssh;
-    try {
-      ssh = await SshExec.connect(host);
-      final g = await ssh.gitStatus(cwd);
-      if (mounted) {
-        setState(() {
-          _git = g;
-          _gitError = null;
-        });
-      }
-    } catch (e) {
-      if (mounted) setState(() => _gitError = 'Git status needs SSH: $e');
-    } finally {
-      ssh?.close();
-      if (mounted) setState(() => _gitLoading = false);
-    }
+    final next = host == null || cwd == null ? null : RigGit.of(host, cwd);
+    if (identical(next, _feed)) return;
+    _feed?.removeListener(_onGit);
+    _feed?.unlisten();
+    _feed = next
+      ?..addListener(_onGit)
+      ..listen();
+  }
+
+  void _onGit() {
+    if (mounted) setState(() {});
   }
 
   void _listen({int? replay}) {
@@ -235,7 +225,7 @@ class _RigScreenState extends State<RigScreen> with Polling {
   bool wants(RigEvent e) =>
       e.rigId == _rig.id || e.type == 'seat.activity_changed' && _seats.any((s) => s.sessionName == e.sessionName);
 
-  Future<void> _refreshAll() => Future.wait([load(), _loadTopology(), _loadGit()]);
+  Future<void> _refreshAll() => Future.wait([load(), _loadTopology(), _feed?.refresh() ?? Future<void>.value()]);
 
   void _push(Widget w) => Navigator.of(context).push(MaterialPageRoute(builder: (_) => w));
 

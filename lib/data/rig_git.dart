@@ -24,6 +24,10 @@ class RigGit extends ValueNotifier<GitStatus?> {
   Timer? _timer;
   bool _busy = false;
 
+  /// A reading is on its way, and why the last one failed (null when it worked): what the rig page's Code tab shows.
+  bool loading = false;
+  String? error;
+
   String get _key => '${host.id}|$cwd';
 
   void listen() {
@@ -48,13 +52,19 @@ class RigGit extends ValueNotifier<GitStatus?> {
   Future<void> refresh() async {
     if (_busy) return;
     _busy = true;
+    loading = true;
+    notifyListeners();
     try {
       final g = await SshExec.use(host, (ssh) => ssh.gitStatus(cwd));
+      error = null;
       value = g.isRepo ? g : null;
-    } catch (_) {
+    } catch (e) {
       // Keeps the last reading: a dropped connection is not a changed branch.
+      error = 'Git status needs SSH: $e';
     } finally {
       _busy = false;
+      loading = false;
+      notifyListeners();
     }
   }
 

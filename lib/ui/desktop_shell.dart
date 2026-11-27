@@ -1359,9 +1359,11 @@ class _Row extends StatelessWidget {
   /// False: [onMore] is reached by long press and right click only (project and rig rows).
   final bool moreButton;
 
+  bool get _needs => agentStatus == Status.needsYou;
+
   /// An agent that needs you paints its whole row in the Rigs home's needs-you tint; selected keeps its ground under it and its border.
   Color _fill(Tokens k) {
-    final tint = agentStatus == Status.needsYou ? k.accent.withValues(alpha: 0.08) : null;
+    final tint = agentStatus == Status.needsYou ? k.accent.withValues(alpha: 0.14) : null;
     if (selected) return tint == null ? k.ground : Color.alphaBlend(tint, k.ground);
     return tint ?? Colors.transparent;
   }
@@ -1396,6 +1398,8 @@ class _Row extends StatelessWidget {
           child: CustomPaint(
             // A subagent's or shell's own parent is an agent, which has no guide under it: the guides stop at the rig's.
           painter: _Guides(guides ?? (kind == StatusKind.agent ? depth : depth - 1), k.border),
+            // Selected on top of the needs-you tint, whose fill would hide the border: a 2dp accent edge as well.
+            foregroundPainter: selected && _needs ? _Edge(k.accent) : null,
             child: Padding(
               // One line: 7 above and below with a mouse; with a second line (context bar, worktree) 4. A finger's row stays 48.
               padding: EdgeInsets.fromLTRB(navFillInset + depth * _indent, compact ? 0 : navRowTop(twoLines: twoLines), navFillInset,
@@ -1448,7 +1452,7 @@ class _Row extends StatelessWidget {
                           // A column of its own (right-aligned), so the age never runs into what sits beside it.
                           child: Padding(
                               padding: const EdgeInsets.only(left: 6),
-                              child: SizedBox(width: 28, child: Text(a, textAlign: TextAlign.right, style: mono(context, size: 11, color: k.muted)))),
+                              child: SizedBox(width: 28, child: Text(a, textAlign: TextAlign.right, style: mono(context, size: 11, color: _needs ? k.ink : k.muted)))),
                         ),
                       // The one trailing column (24 with a mouse, 44 for a finger): the fold chevron, or the ⋯ with a mouse (shown on
                       // hover or when selected, its room kept; a finger long-presses the row). Counts and ages end at its left edge.
@@ -1565,6 +1569,18 @@ Widget _ctxPercent(BuildContext context, Tokens k, double c) => SizedBox(
                 .copyWith(fontWeight: contextWeight(c), fontFeatures: const [FontFeature.tabularFigures()])),
       ),
     );
+
+/// The selected needs-you row's 2dp accent edge on the left.
+class _Edge extends CustomPainter {
+  _Edge(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) => canvas.drawRect(Rect.fromLTWH(0, 0, 2, size.height), Paint()..color = color);
+
+  @override
+  bool shouldRepaint(_Edge old) => old.color != color;
+}
 
 /// A 1dp line down the middle of each ancestor's fold slot, the full height of the row.
 class _Guides extends CustomPainter {

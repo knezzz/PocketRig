@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:pocket_rig/ui/action_rows.dart';
 import 'package:pocket_rig/ui/app_icon.dart';
 import 'package:pocket_rig/ui/desktop_menu.dart';
 import 'package:pocket_rig/ui/rig/rig_header.dart';

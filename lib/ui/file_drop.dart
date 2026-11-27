@@ -22,13 +22,29 @@ Future<List<String>> dropImagePaths(
   Future<List<String>> Function(Host, List<(String, Uint8List)>) upload = uploadAttachments,
 }) async {
   if (files.isEmpty) throw OpenRigException('Nothing to attach.');
-  final other = files.where((f) => !_image.hasMatch(f.$1)).firstOrNull;
-  if (other != null) throw OpenRigException('${other.$1} isn\'t an image (png, jpg, gif or webp).');
+  checkImageNames([for (final f in files) f.$1]);
   return upload(host, files);
 }
 
-/// [paths] as one pasted word list for a terminal: each quoted for the shell, space separated.
-String quotedPaths(List<String> paths) => paths.map(shQuote).join(' ');
+/// Throws for the first of [names] that isn't an image.
+void checkImageNames(List<String> names) {
+  final other = names.where((n) => !_image.hasMatch(n)).firstOrNull;
+  if (other != null) throw OpenRigException('$other isn\'t an image (png, jpg, gif or webp).');
+}
+
+/// The (name, bytes) of dropped [files]. The names and sizes are checked first, so a multi-GB video is refused without being
+/// read, and nothing is read when any file is refused.
+Future<List<(String, Uint8List)>> readDropped(List<DropItem> files) async {
+  checkImageNames([for (final f in files) f.name]);
+  for (final f in files) {
+    if (await f.length() > maxAttachmentBytes) throw OpenRigException('${f.name} is over 50 MB, too big to send.');
+  }
+  return [for (final f in files) (f.name, await f.readAsBytes())];
+}
+
+/// [paths] as one pasted word list for a terminal, space separated: bare when a path has only safe characters (what a Finder
+/// drag into Terminal gives, and what Claude Code turns into [Image #1]), quoted for the shell only when it needs it.
+String quotedPaths(List<String> paths) => paths.map((p) => RegExp(r'^[A-Za-z0-9._/@%+=:,-]+$').hasMatch(p) ? p : shQuote(p)).join(' ');
 
 /// Drop an image file (or a screenshot thumbnail) on [child] on a Mac: it goes to the host's upload folder and
 /// [onPaste] gets its remote path, for a terminal to paste quoted ([quotedPaths]) without Enter (Claude Code shows it as [Image #1]). A highlight shows while dragging,
@@ -50,11 +66,17 @@ enum _Phase { idle, over, uploading, attached }
 class _ImageDropTargetState extends State<ImageDropTarget> {
   var _phase = _Phase.idle;
 
-  Future<void> drop(List<(String, Uint8List)> files) async {
+  /// A drop is being uploaded or its 'Attached' is showing: another drop waits for it to end.
+  var _busy = false;
+
+  /// Reads and uploads what [read] gives and hands the paths to the target, one drop at a time.
+  Future<void> drop(Future<List<(String, Uint8List)>> Function() read) async {
     final host = AppScope.read(context).active;
-    if (host == null) return;
+    if (host == null || _busy) return;
+    _busy = true;
     setState(() => _phase = _Phase.uploading);
     try {
+      final files = await read();
       final paths = await (widget.upload ?? (h, f) => dropImagePaths(h, f))(host, files);
       if (!mounted) return;
       widget.onPaste(paths);
@@ -63,6 +85,7 @@ class _ImageDropTargetState extends State<ImageDropTarget> {
     } catch (e) {
       if (mounted) toast(context, 'Couldn\'t attach: ${e is OpenRigException ? e.message : e}');
     }
+    _busy = false;
     if (mounted) setState(() => _phase = _Phase.idle);
   }
 
@@ -71,25 +94,11 @@ class _ImageDropTargetState extends State<ImageDropTarget> {
     if (!isDesktop) return widget.child;
     final k = Tokens.of(context);
     return DropTarget(
-      // A screen under another one still hears the drag: only the one in front takes it.
-      enable: TickerMode.of(context),
-      onDragEntered: (_) => setState(() => _phase = _Phase.over),
+      // A screen under another one, or under a dialog or sheet, still hears the drag: only the one in front takes it.
+      enable: TickerMode.valuesOf(context).enabled && (ModalRoute.of(context)?.isCurrent ?? true),
+      onDragEntered: (_) => _busy ? null : setState(() => _phase = _Phase.over),
       onDragExited: (_) => setState(() => _phase = _phase == _Phase.over ? _Phase.idle : _phase),
-      onDragDone: (d) async {
-        if (_phase == _Phase.uploading) return;
-        final files = <(String, Uint8List)>[];
-        try {
-          for (final f in d.files) {
-            files.add((f.name, await f.readAsBytes()));
-          }
-        } catch (e) {
-          if (!mounted) return;
-          toast(this.context, 'Couldn\'t read the file: $e');
-          setState(() => _phase = _Phase.idle);
-          return;
-        }
-        await drop(files);
-      },
+      onDragDone: (d) => drop(() => readDropped(d.files)),
       child: Stack(fit: StackFit.passthrough, children: [
         widget.child,
         if (_phase != _Phase.idle)

@@ -440,10 +440,10 @@ class SshExec {
   }
 
   /// Stops an agent's job and everything it started; how many processes are
-  /// still running 5 s later.
-  /// Under `sh`: the login shell may be zsh, which doesn't split `$all` into pids.
+  /// still running 5 s later, or -1 when the job was no longer in [session] and nothing was signalled. Through the login shell
+  /// (Homebrew's tmux is on its PATH), and then under `sh`: the login shell may be zsh, which doesn't split `$all` into pids.
   Future<int> stopJob(int pid, {String? session}) async =>
-      AgentJob.stillRunning(await run('sh -c ${shQuote(AgentJob.stopScript(pid, session: session))}'));
+      AgentJob.stillRunning(await runLogin('sh -c ${shQuote(AgentJob.stopScript(pid, session: session))}'));
 
   /// Every running Claude Code subagent on the host.
   Future<List<Subagent>> subagents() async => Subagent.parse(await run('sh -c ${shQuote(Subagent.script())}'));

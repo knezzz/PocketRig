@@ -538,8 +538,14 @@ esac
 
       test('without a pane it closes the session', () async {
         File('${home.path}/running').createSync();
-        expect(await kill(name: 'n1'), contains('pocketrig-kill-ok'));
+        expect(await kill(name: 'n1', since: 1000), contains('pocketrig-kill-ok'));
         expect(tmuxLog.readAsStringSync(), contains('kill-session -t =n1'));
+      });
+
+      test('with no process and no age to compare, a live session of that name is not closed', () async {
+        File('${home.path}/running').createSync();
+        expect(await kill(name: 'n1'), contains('pocketrig-kill-error session-unknown'));
+        expect(tmuxLog.readAsStringSync(), isNot(contains('kill-')));
       });
 
       test('a pane no longer in the session is left alone', () async {
@@ -614,6 +620,21 @@ esac
         expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue);
       });
 
+      test('Remove on a gone row passes a real session id and clears it (forgetLooseAgent itself)', () async {
+        final commands = <String>[];
+        SshExec.debugConnect = (h) async => SshExec.fake((cmd) async {
+              commands.add(cmd);
+              return 'pocketrig-kill-ok\n';
+            });
+        addTearDown(() => SshExec.debugConnect = null);
+        final host = Host(id: 'h', name: 'mini', address: 'mini', sshUser: 'me');
+        final a = LooseAgent(id: 'x', claudeSessionId: '5091364c-8453-4a0e-b1c5-0123456789ab', tmuxSession: 'gone-one');
+        await forgetLooseAgent(host, a);
+        expect(commands.single, contains('SessionEnd'));
+        expect(commands.single, isNot(contains('kill -TERM')));
+        await expectLater(forgetLooseAgent(host, LooseAgent(id: 'y', claudeSessionId: 'a b;rm')), throwsA(isA<OpenRigException>()));
+      });
+
       test('a job Stop in a session signals nothing when the pid is no longer under one of its panes', () async {
         File('${home.path}/running').createSync();
         final j = await Process.start('sleep', ['60']);
@@ -623,7 +644,7 @@ esac
             .stdout
             .toString();
         File('${home.path}/panepid').writeAsStringSync('1\n');
-        expect(await stop(), contains('left:'));
+        expect(await stop(), contains('pocketrig-stop-moved'));
         expect(Process.killPid(j.pid, ProcessSignal.sigcont), isTrue, reason: 'not under a pane: left alone');
         File('${home.path}/panepid').writeAsStringSync('${j.pid}\n');
         await stop();

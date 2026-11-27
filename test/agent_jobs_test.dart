@@ -46,6 +46,7 @@ void main() {
     expect(AgentJob.stopScript(42), contains('kill -TERM \$all'));
     expect(AgentJob.stillRunning('left:\n'), 0);
     expect(AgentJob.stillRunning('left: 42 43\n'), 2);
+    expect(AgentJob.stillRunning('pocketrig-stop-moved\n'), -1, reason: 'refused: nothing was stopped');
   });
 
   test('stops under sh, since a zsh login shell would not split the pid list', () async {
@@ -55,7 +56,9 @@ void main() {
       return 'left: 7\n';
     });
     expect(await ssh.stopJob(42), 1);
-    expect(sent, startsWith("sh -c 'all=42;"));
+    expect(sent, contains('all=42; new=42;'), reason: 'through the login shell, for Homebrew\'s tmux');
+    expect(sent, contains('sh -c '));
+    expect(sent, startsWith('PATH='));
   });
 
   test('kills exactly one tmux session, with the = quoted for zsh', () async {

@@ -328,8 +328,10 @@ if [ -n "\$name" ]; then
     if [ -n "\$pid" ]; then
       # Claude runs elsewhere (the conversation was resumed, or a name like 0 was reused): this session is not its row's.
       inpane "\$pid" "\$(tmux list-panes -s -t "=\$name" -F '#{pane_pid}' 2>/dev/null | tr '\\n' ' ')" || fail session-reused
-    elif [ -z "\$pane" ] && [ "\$since" -gt 0 ] 2>/dev/null; then
-      # Nothing of the agent is alive: a session made after the row was first seen is another one.
+    elif [ -z "\$pane" ]; then
+      # Nothing of the agent is alive: a session made after the row was first seen is another one, and with no age to
+      # compare there is nothing to tell them apart by.
+      [ "\$since" -gt 0 ] 2>/dev/null || fail session-unknown
       sc=\$(tmux display-message -p -t "=\$name:" '#{session_created}' 2>/dev/null)
       [ -z "\$sc" ] || [ "\$sc" -le \$((since + 5)) ] 2>/dev/null || fail session-reused
     fi
@@ -379,7 +381,7 @@ echo pocketrig-kill-ok
 Future<void> forgetLooseAgent(Host host, LooseAgent a) async {
   final id = a.claudeSessionId;
   if (id == null) return;
-  if (!RegExp(r'^[A-Za-z0-9_-]+\$').hasMatch(id)) throw OpenRigException('That doesn\'t look like a Claude session id.');
+  if (!RegExp(r'^[A-Za-z0-9_-]+$').hasMatch(id)) throw OpenRigException('That doesn\'t look like a Claude session id.');
   final ssh = await SshExec.connect(host);
   try {
     await ssh.runLogin('sh -c ${shQuote(forgetAgentScript(id))}');
@@ -409,6 +411,7 @@ Future<void> killAgent(Host host, LooseAgent a) async {
     'not-claude' => 'The process on record isn\'t Claude any more. Nothing was killed.',
     'pane-moved' => 'Its tmux pane has changed. Nothing was killed. Rescan and try again.',
     'session-reused' => 'That tmux session isn\'t this agent\'s any more (its name was reused). Nothing was killed. Rescan and try again.',
+    'session-unknown' => 'Can\'t tell whether that tmux session is this agent\'s (no process and no age to compare). Nothing was killed. Rescan and try again.',
     'ambiguous' => 'More than one running Claude has this conversation. Nothing was killed. Stop the right one at the Mac.',
     'in-tmux' => 'That Claude runs in a tmux session, not in a terminal tab. Nothing was killed. Rescan and try again.',
     'kill-failed' => 'tmux couldn\'t close it. Check the agent at the Mac.',

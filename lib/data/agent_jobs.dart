@@ -111,15 +111,16 @@ class AgentJob {
           ? ''
           : 'p=$pid; panes=\$(tmux list-panes -s -t ${shQuote('=$session')} -F "#{pane_pid}" 2>/dev/null | tr "\\n" " "); mine=; '
               'while [ -n "\$p" ] && [ "\$p" -gt 1 ] 2>/dev/null; do case " \$panes" in *" \$p "*) mine=1; break ;; esac; '
-              'p=\$(ps -o ppid= -p "\$p" 2>/dev/null | tr -d " "); done; [ -n "\$mine" ] || { echo "left:"; exit 0; }; ') +
+              'p=\$(ps -o ppid= -p "\$p" 2>/dev/null | tr -d " "); done; [ -n "\$mine" ] || { echo pocketrig-stop-moved; exit 0; }; ') +
       'all=$pid; new=$pid; '
       'while [ -n "\$new" ]; do new=\$(for p in \$new; do pgrep -P "\$p"; done); all="\$all \$new"; done; '
       'kill -TERM \$all 2>/dev/null; i=0; while [ \$i -lt 10 ]; do left=; '
       'for p in \$all; do kill -0 "\$p" 2>/dev/null && left="\$left \$p"; done; '
       '[ -z "\$left" ] && break; sleep 0.5; i=\$((i+1)); done; echo "left:\$left"';
 
-  /// How many processes [stopScript] left running.
+  /// How many processes [stopScript] left running; -1 when it refused (the job is no longer in that session).
   static int stillRunning(String out) {
+    if (out.contains('pocketrig-stop-moved')) return -1;
     final line = out.split('\n').lastWhere((l) => l.startsWith('left:'), orElse: () => 'left:');
     return line.substring(5).trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).length;
   }

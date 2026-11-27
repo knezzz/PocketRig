@@ -50,7 +50,7 @@ void main() {
     const k = Tokens.light;
     Color? folderOf(String project) => tester
         .widget<AppIcon>(find.descendant(
-            of: find.ancestor(of: inHome(find.text(project)), matching: find.byType(Row)).first, matching: appIcon(AppIconKind.folder)))
+            of: find.ancestor(of: inHome(find.text(project)), matching: find.byType(InkWell)).first, matching: appIcon(AppIconKind.folder)))
         .color;
     expect(folderOf('app'), k.accent, reason: 'a project with work: the accent');
     // An empty project, or one with only stopped rigs (loyalty), is not on the home at all.

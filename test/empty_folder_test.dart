@@ -93,6 +93,10 @@ void main() {
     final x = find.byTooltip('Remove kept from the list');
     expect(x, findsOneWidget);
     expect(tester.widget<Opacity>(find.ancestor(of: x, matching: find.byType(Opacity)).first).opacity, 1, reason: 'a finger has no hover');
+    // The ⋯ ends at the row's right edge and the x sits just left of it: nothing is stranded mid-row.
+    final row = tester.getRect(find.ancestor(of: find.text('kept'), matching: find.byType(InkWell)).first);
+    expect(tester.getRect(find.byTooltip('Actions for kept')).right, closeTo(row.right, 2.5));
+    expect(tester.getRect(x).right, closeTo(tester.getRect(find.byTooltip('Actions for kept')).left, 4));
     await tester.tap(x);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Remove'));

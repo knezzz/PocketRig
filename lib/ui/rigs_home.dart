@@ -448,15 +448,20 @@ class _RigsHomeState extends State<RigsHome> {
             // is greyed all through (goneColor) until the x takes it out.
             AppIcon(AppIconKind.folder, size: 18, color: p.nothingHere ? goneColor(k) : folderColor(k, needs: t.needs, working: t.working)),
             const SizedBox(width: 8),
-            Flexible(
-                child: Text(heading.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: p.nothingHere ? goneColor(k) : null))),
-            const SizedBox(width: 8),
+            // One Expanded holds the title and its sub-line, so the x, the count and the ⋯ hug the right edge (a Flexible title
+            // beside an Expanded sub-line shared the free space and left half of it empty).
             Expanded(
-                child: Text(p.nothingHere ? 'nothing running · ${heading.sub}' : heading.sub,
-                    maxLines: 1, overflow: TextOverflow.ellipsis, style: mono(context, size: 12, color: p.nothingHere ? goneColor(k) : k.muted))),
+                child: Row(children: [
+              Flexible(
+                  child: Text(heading.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: p.nothingHere ? goneColor(k) : null))),
+              const SizedBox(width: 8),
+              Flexible(
+                  child: Text(p.nothingHere ? 'nothing running · ${heading.sub}' : heading.sub,
+                      maxLines: 1, overflow: TextOverflow.ellipsis, style: mono(context, size: 12, color: p.nothingHere ? goneColor(k) : k.muted))),
+            ])),
             if (t.needs > 0) Text('${t.needs}', style: mono(context, size: 12, color: k.accent, weight: FontWeight.w700)),
             // The x: on a hover with a mouse, always for a finger (after a confirm).
             if (p.nothingHere)

@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:desktop_drop/desktop_drop.dart' show DropItemFile;
 import 'package:flutter/material.dart';
@@ -43,12 +42,23 @@ void main() {
     await expectLater(dropImagePaths(host, []), throwsA(isA<OpenRigException>()));
   });
 
-  Future<void> drop(WidgetTester tester, List<String> paths) async {
-    const c = StandardMethodCodec();
-    final m = tester.binding.defaultBinaryMessenger;
-    await m.handlePlatformMessage('desktop_drop', c.encodeMethodCall(const MethodCall('entered', [10.0, 10.0])), (_) {});
-    await m.handlePlatformMessage('desktop_drop', c.encodeMethodCall(MethodCall('performOperation', paths)), (_) {});
-    await Future<void>.delayed(const Duration(milliseconds: 200)); // the file read is real IO
+  /// The plugin's drop message, sent in the real-time zone so the target's file read and its 2 s timer run in real time.
+  Future<void> drop(WidgetTester tester, List<String> paths) => tester.runAsync(() async {
+        const c = StandardMethodCodec();
+        final m = tester.binding.defaultBinaryMessenger;
+        await m.handlePlatformMessage('desktop_drop', c.encodeMethodCall(const MethodCall('entered', [10.0, 10.0])), (_) {});
+        await m.handlePlatformMessage('desktop_drop', c.encodeMethodCall(MethodCall('performOperation', paths)), (_) {});
+      }) as Future<void>;
+
+  /// Runs real time (the dropped file is read with real IO) until [done], pumping as it goes; fails if it never is.
+  Future<void> settle(WidgetTester tester, bool Function() done) async {
+    await tester.runAsync(() async {
+      for (var i = 0; i < 1000 && !done(); i++) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+        await tester.pump();
+      }
+    });
+    expect(done(), isTrue, reason: 'it settled');
   }
 
   testWidgets('dropping a file on the target uploads it and pastes the path; a failure pastes nothing', (tester) async {
@@ -74,27 +84,23 @@ void main() {
           },
           child: const SizedBox.expand(),
         ))));
-    await tester.runAsync(() => drop(tester, [img.path]));
-    await tester.pump();
+    await drop(tester, [img.path]);
+    await settle(tester, () => pasted.isNotEmpty);
     expect(pasted, [
       ['/up/shot.png']
     ]);
     expect(find.text('Attached'), findsOneWidget);
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 2100))); // the drop ran in real time
-    await tester.pump();
-    expect(find.text('Attached'), findsNothing);
+    await settle(tester, () => find.text('Attached').evaluate().isEmpty); // its 2 s run in real time
 
     fail = true;
-    await tester.runAsync(() => drop(tester, [img.path]));
-    await tester.pump();
-    expect(find.textContaining('disk full'), findsOneWidget, reason: 'it says why');
+    await drop(tester, [img.path]);
+    await settle(tester, () => find.textContaining('disk full').evaluate().isNotEmpty);
     expect(pasted, hasLength(1), reason: 'a failed upload pastes nothing');
     await tester.pump(const Duration(seconds: 10));
 
     fail = false;
-    await tester.runAsync(() => drop(tester, [txt.path]));
-    await tester.pump();
-    expect(find.textContaining('a.txt'), findsOneWidget);
+    await drop(tester, [txt.path]);
+    await settle(tester, () => find.textContaining('a.txt').evaluate().isNotEmpty);
     expect(pasted, hasLength(1));
     await tester.pump(const Duration(seconds: 10));
   });
@@ -138,7 +144,7 @@ void main() {
     final img = File('${dir.path}/shot.png')..writeAsBytesSync([1]);
     showDialog<void>(context: tester.element(find.byType(ImageDropTarget)), builder: (_) => const AlertDialog(title: Text('Sure?')));
     await tester.pumpAndSettle();
-    await tester.runAsync(() => drop(tester, [img.path]));
+    await drop(tester, [img.path]); // the target is off behind the dialog: nothing starts, so nothing to wait for
     await tester.pump();
     expect(pasted, isEmpty);
     expect(uploads, isEmpty);
@@ -150,24 +156,21 @@ void main() {
     final dir = Directory.systemTemp.createTempSync('drop');
     addTearDown(() => dir.deleteSync(recursive: true));
     final img = File('${dir.path}/shot.png')..writeAsBytesSync([1]);
-    await tester.runAsync(() => drop(tester, [img.path]));
-    await tester.runAsync(() => drop(tester, [img.path])); // still uploading
+    await drop(tester, [img.path]);
+    await settle(tester, () => uploads.isNotEmpty); // the file is read, the upload is waiting on the gate
+    await drop(tester, [img.path]); // still uploading: ignored before anything is read
+    await tester.pump();
     expect(uploads, hasLength(1));
     gate.complete(['/up/a.png']);
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await settle(tester, () => find.text('Attached').evaluate().isNotEmpty);
+    await drop(tester, [img.path]); // Attached is showing: ignored
     await tester.pump();
-    expect(find.text('Attached'), findsOneWidget);
-    await tester.runAsync(() => drop(tester, [img.path])); // Attached is showing
     expect(uploads, hasLength(1));
     expect(pasted, hasLength(1));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 2100)));
-    await tester.pump();
-    expect(find.text('Attached'), findsNothing);
-    await tester.runAsync(() => drop(tester, [img.path])); // idle again: the next drop goes
-    await tester.pump();
-    expect(uploads, hasLength(2));
-    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 2100)));
-    await tester.pump();
+    await settle(tester, () => find.text('Attached').evaluate().isEmpty);
+    await drop(tester, [img.path]); // idle again: the next drop goes
+    await settle(tester, () => uploads.length == 2);
+    await settle(tester, () => find.text('Attached').evaluate().isEmpty);
   });
 }
 

@@ -7,7 +7,6 @@ import 'package:pocket_rig/ui/chat/session_pills.dart' show chatGutter;
 import 'package:pocket_rig/ui/permission_card.dart';
 
 import 'chat_questions_test.dart' show ask, q;
-import 'package:pocket_rig/models.dart' show AskQuestion;
 
 Future<void> pumpIn(WidgetTester tester, double width, Widget child) async {
   tester.view.physicalSize = Size(width + 40, 900);

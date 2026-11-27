@@ -34,7 +34,7 @@ void main() {
     expect(labelX('Add project folder'), 41);
     expect(labelX('conveyor'), 53, reason: 'a rig, one level in');
     expect(labelX('lead'), 74, reason: 'an agent under a rig, two in');
-    expect(labelX('scratch'), 74, reason: 'an agent outside a rig is at the same x as one under a rig');
+    expect(labelX('scratch'), 62, reason: 'an agent outside a rig is the rig\'s sibling: its logo where the rig\'s icon is (the label 9 on for the logo\'s wider gap), not level with the rig\'s seats');
     expect(labelX('Write the parser'), 86, reason: 'a subagent, one more');
     // The search row is on the grid: its icon in the 16 slot, level with the Inbox row's icon, its label at 41.
     expect(tester.getTopLeft(find.descendant(of: sidebar, matching: find.byIcon(Icons.search))).dx,

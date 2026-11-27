@@ -30,6 +30,17 @@ void main() {
         ['rp-app /Users/me/code/app', 'rp-my notes /Users/me/my:notes']);
   });
 
+  test('a shell session an agent runs in is one row, the agent\'s; with the agent gone it is a shell again', () {
+    const repo = '/Users/me/code/app';
+    final agent = LooseAgent(id: 'rp-app', runtime: 'claude-code', cwd: repo, tmuxSession: 'rp-app', tmuxPane: '%1');
+    const shells = [ProjectShell('rp-app', repo), ProjectShell('rp-other', repo)];
+    final both = groupIntoProjects(const [], [repo], [agent], const [], shells).single;
+    expect(both.loose.map((a) => a.id), ['rp-app']);
+    expect(both.shells.map((s) => s.name), ['rp-other'], reason: 'a different session stays a shell');
+    final gone = groupIntoProjects(const [], [repo], const [], const [], shells).single;
+    expect(gone.shells.map((s) => s.name), ['rp-app', 'rp-other']);
+  });
+
   test('a shell joins the project of its folder, a worktree joins its main checkout, a bare folder gets a card', () {
     const repo = '/Users/me/code/app';
     final projects = groupIntoProjects(const [], [repo], const [], const [], [

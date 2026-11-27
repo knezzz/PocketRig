@@ -12,7 +12,10 @@ int projectGroup(Project p) =>
     isHomeFolder(p.path) ? 2 : (p.path != '(no folder)' && (p.pinned || p.rigs.isNotEmpty) ? 0 : 1);
 
 List<Project> groupIntoProjects(List<RigWithSeats> rigs, List<String> pinned,
-    [List<LooseAgent> loose = const [], List<AttentionItem> attention = const [], List<ProjectShell> shells = const []]) {
+    [List<LooseAgent> loose = const [], List<AttentionItem> attention = const [], List<ProjectShell> allShells = const []]) {
+  // One tmux session, one row: a shell session that an agent runs in (it was started in the shell) is the agent's row.
+  final taken = {for (final a in loose) a.tmuxSession};
+  final shells = [for (final s in allShells) if (!taken.contains(s.name)) s];
   final byPath = <String, Project>{};
   for (final p in pinned) {
     byPath[p] = Project(path: p, pinned: true);

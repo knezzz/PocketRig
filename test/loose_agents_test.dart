@@ -8,6 +8,8 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:pocket_rig/api/openrig_client.dart';
 import 'package:pocket_rig/data/deep_link.dart';
+import 'package:pocket_rig/data/fleet.dart' show fleet;
+import 'package:pocket_rig/data/agent_jobs.dart' show AgentJob;
 import 'package:pocket_rig/data/loose_agents.dart';
 import 'package:pocket_rig/data/projects.dart';
 import 'package:pocket_rig/main.dart';
@@ -337,6 +339,29 @@ void main() {
     expect(inSheet('Kill agent…'), findsOneWidget, reason: 'red, pinned under the rows');
   });
 
+  testWidgets('a row whose tmux session is gone offers Remove from list, which only clears the record and never runs the kill', (tester) async {
+    final store = await installFakes();
+    final agent = scratchAgent();
+    fleet.feedFor(store.active!).jobs = <String, List<AgentJob>>{'some-other-session': const []};
+    final commands = <String>[];
+    SshExec.debugConnect = (h) async => SshExec.fake((cmd) async {
+          commands.add(cmd);
+          return cmd.contains('SessionEnd') ? 'pocketrig-kill-ok\n' : fakeShell(cmd);
+        });
+    await tester.pumpWidget(AppScope(store: store, child: MaterialApp(home: LooseAgentScreen(agent: agent))));
+    await tester.pump();
+    expect(find.text('Kill agent…'), findsNothing);
+    await tester.tap(find.text('Remove from list…'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Remove scratch from the list?'), findsOneWidget);
+    await tester.tap(find.text('Remove'));
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(commands.where((c) => c.contains('kill-session') || c.contains('kill -TERM')), isEmpty, reason: 'nothing is killed');
+  });
+
   testWidgets('Kill agent, pinned at the bottom, confirms, runs the script, and reports failure', (tester) async {
     final store = await installFakes();
     final commands = <String>[];
@@ -388,8 +413,13 @@ void main() {
 
     /// A live process with claude in its command line (bash's \$0), registered
     /// like Claude Code does.
+    var agents = 0;
     Future<Process> agent(String id, String body) async {
-      final p = await Process.start(bash, ['-c', body, 'claude']);
+      // A script named claude: `ps` shows `/bin/sh …/claude`, the way an installed claude shows its name first.
+      final script = File('${home.path}/a${agents++}/claude')..createSync(recursive: true);
+      script.writeAsStringSync('#!/bin/sh\n$body\n');
+      Process.runSync('chmod', ['+x', script.path]);
+      final p = await Process.start(script.path, []);
       procs.add(p);
       File('${home.path}/.claude/sessions/${p.pid}.json').writeAsStringSync('{"pid":${p.pid},"sessionId":"$id"}');
       await Future<void>.delayed(const Duration(milliseconds: 200));
@@ -410,6 +440,7 @@ void main() {
 echo "\$*" >> "${tmuxLog.path}"
 case "\$1" in
   has-session) [ -f "${home.path}/running" ] && [ "\$3" = "=n1" ] ;;
+  display-message) cat "${home.path}/created" 2>/dev/null ;;
   new-session) touch "${home.path}/running" ;;
   list-panes) case "\$*" in *pane_pid*) cat "${home.path}/panepid" 2>/dev/null ;; *) echo %7 ;; esac ;;
 esac
@@ -472,9 +503,9 @@ esac
     group('kill', () {
       late File curlLog;
 
-      Future<String> kill({String? id, String? name, String? pane}) async => (await Process.run(
+      Future<String> kill({String? id, String? name, String? pane, int? since}) async => (await Process.run(
             '/bin/sh',
-            ['-c', killAgentScript(sessionId: id, name: name, pane: pane, waitSeconds: 1)],
+            ['-c', killAgentScript(sessionId: id, name: name, pane: pane, since: since, waitSeconds: 1)],
             environment: {'HOME': home.path, 'PATH': '${home.path}/bin:/usr/bin:/bin'},
           ))
               .stdout
@@ -530,13 +561,73 @@ esac
         expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue, reason: 'still alive');
       });
 
-      test('a live session does not take a process that is in no pane of it', () async {
+      test('a live session of that name is not closed when its Claude runs elsewhere (a reused name like 0)', () async {
         File('${home.path}/running').createSync();
         File('${home.path}/panepid').writeAsStringSync('1\n');
         final p = await agent('abc', 'sleep 60 & wait');
-        expect(await kill(id: 'abc', name: 'n1'), contains('pocketrig-kill-ok'));
-        expect(tmuxLog.readAsStringSync(), contains('kill-session -t =n1'));
-        expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue, reason: 'its session closed, the other conversation stays');
+        expect(await kill(id: 'abc', name: 'n1'), contains('pocketrig-kill-error session-reused'));
+        expect(tmuxLog.readAsStringSync(), isNot(contains('kill-')), reason: 'the new session survives');
+        expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue, reason: 'and so does the other conversation');
+      });
+
+      test('with no process alive, a session made after the row was first seen is not closed', () async {
+        File('${home.path}/running').createSync();
+        File('${home.path}/created').writeAsStringSync('2000\n');
+        expect(await kill(name: 'n1', since: 1000), contains('pocketrig-kill-error session-reused'));
+        expect(tmuxLog.readAsStringSync(), isNot(contains('kill-')));
+        File('${home.path}/created').writeAsStringSync('900\n');
+        expect(await kill(name: 'n1', since: 1000), contains('pocketrig-kill-ok'));
+        expect(tmuxLog.readAsStringSync(), contains('kill-session -t =n1'), reason: 'an older session is the same one');
+      });
+
+      test('two live processes holding the id: nothing is killed', () async {
+        final a = await agent('abc', 'sleep 60 & wait');
+        final b = await agent('abc', 'sleep 60 & wait');
+        expect(await kill(id: 'abc'), contains('pocketrig-kill-error ambiguous'));
+        expect(Process.killPid(a.pid, ProcessSignal.sigcont), isTrue);
+        expect(Process.killPid(b.pid, ProcessSignal.sigcont), isTrue);
+      });
+
+      test('a terminal tab row does not kill a Claude that runs in a tmux pane', () async {
+        final p = await agent('abc', 'sleep 60 & wait');
+        File('${home.path}/panepid').writeAsStringSync('${p.pid}\n');
+        expect(await kill(id: 'abc'), contains('pocketrig-kill-error in-tmux'));
+        expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue);
+      });
+
+      test('only a process whose executable is claude counts, not one with claude in an argument', () async {
+        final q = await Process.start('/bin/sh', ['-c', 'sleep 60', '/home/me/.claude/x']);
+        procs.add(q);
+        File('${home.path}/.claude/sessions/${q.pid}.json').writeAsStringSync('{"sessionId":"zzz"}');
+        expect(await kill(id: 'zzz'), contains('pocketrig-kill-error not-claude'));
+        expect(Process.killPid(q.pid, ProcessSignal.sigcont), isTrue);
+      });
+
+      test('removing a gone row clears its record and kills nothing, whatever holds its id', () async {
+        final p = await agent('abc', 'sleep 60 & wait');
+        final out = (await Process.run('/bin/sh', ['-c', forgetAgentScript('abc')],
+                environment: {'HOME': home.path, 'PATH': '${home.path}/bin:/usr/bin:/bin'}))
+            .stdout
+            .toString();
+        expect(out, contains('pocketrig-kill-ok'));
+        expect(curlLog.readAsStringSync(), contains('"session_id":"abc","hook_event_name":"SessionEnd"'));
+        expect(Process.killPid(p.pid, ProcessSignal.sigcont), isTrue);
+      });
+
+      test('a job Stop in a session signals nothing when the pid is no longer under one of its panes', () async {
+        File('${home.path}/running').createSync();
+        final j = await Process.start('sleep', ['60']);
+        procs.add(j);
+        Future<String> stop() async => (await Process.run('/bin/sh', ['-c', AgentJob.stopScript(j.pid, session: 'n1')],
+                environment: {'HOME': home.path, 'PATH': '${home.path}/bin:/usr/bin:/bin'}))
+            .stdout
+            .toString();
+        File('${home.path}/panepid').writeAsStringSync('1\n');
+        expect(await stop(), contains('left:'));
+        expect(Process.killPid(j.pid, ProcessSignal.sigcont), isTrue, reason: 'not under a pane: left alone');
+        File('${home.path}/panepid').writeAsStringSync('${j.pid}\n');
+        await stop();
+        expect(await j.exitCode.timeout(const Duration(seconds: 5)), isNot(0), reason: 'under the pane: stopped');
       });
 
       test('the agent in a pane of its session is stopped with it', () async {

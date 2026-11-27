@@ -104,7 +104,15 @@ class AgentJob {
 
   /// Stops [pid] and everything under it (a build's workers too) with TERM,
   /// waits up to 5 s for them to go, and prints `left:` and the pids still alive.
-  static String stopScript(int pid) => 'all=$pid; new=$pid; '
+  ///
+  /// With [session], first checks the job still runs in that tmux session (it or an ancestor is a pane's process): a pid the
+  /// scan listed a minute ago may be another process now, and then nothing is signalled.
+  static String stopScript(int pid, {String? session}) => (session == null
+          ? ''
+          : 'p=$pid; panes=\$(tmux list-panes -s -t ${shQuote('=$session')} -F "#{pane_pid}" 2>/dev/null | tr "\\n" " "); mine=; '
+              'while [ -n "\$p" ] && [ "\$p" -gt 1 ] 2>/dev/null; do case " \$panes" in *" \$p "*) mine=1; break ;; esac; '
+              'p=\$(ps -o ppid= -p "\$p" 2>/dev/null | tr -d " "); done; [ -n "\$mine" ] || { echo "left:"; exit 0; }; ') +
+      'all=$pid; new=$pid; '
       'while [ -n "\$new" ]; do new=\$(for p in \$new; do pgrep -P "\$p"; done); all="\$all \$new"; done; '
       'kill -TERM \$all 2>/dev/null; i=0; while [ \$i -lt 10 ]; do left=; '
       'for p in \$all; do kill -0 "\$p" 2>/dev/null && left="\$left \$p"; done; '

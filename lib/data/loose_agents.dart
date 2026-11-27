@@ -165,8 +165,18 @@ for f in "$HOME"/.claude/sessions/*.json; do
   found=1
   p=$(basename "$f" .json)
   case "$p" in ''|*[!0-9]*) continue ;; esac
-  kill -0 "$p" 2>/dev/null && pid=$p
+  kill -0 "$p" 2>/dev/null && { pid=$p; live=$((live + 1)); }
 done''';
+
+/// Shell helpers: `isclaude PID` (its executable is claude, or Claude Code's version-number title, or an interpreter running a
+/// claude script: not any process with claude somewhere in its arguments) and `inpane PID "PANE_PIDS "` (the process, or one
+/// of its ancestors, is one of those pane processes: it runs in that tmux session).
+const _processChecks = r'''
+isclaude() { set -- $(ps -o command= -p "$1" 2>/dev/null); a=${1##*/}
+  case $a in claude|[0-9]*.[0-9]*.[0-9]*) return 0 ;; node|sh|bash) [ "${2##*/}" = claude ] && return 0 ;; esac; return 1; }
+inpane() { q=$1; while [ -n "$q" ] && [ "$q" -gt 1 ] 2>/dev/null; do
+  case " $2" in *" $q "*) return 0 ;; esac
+  q=$(ps -o ppid= -p "$q" 2>/dev/null | tr -d ' '); done; return 1; }''';
 
 /// Stops the Claude process behind [sessionId], then resumes it in a new
 /// tmux session. Everything that can fail cheaply is checked before the stop,
@@ -198,11 +208,15 @@ ${findBinaryScript(AgentRuntime.claude)}
 claude=\$bin
 cd "\$dir" 2>/dev/null || fail no-folder
 tmux has-session -t "=\$name" 2>/dev/null && fail name-taken
-found=; pid=; tty=
+found=; pid=; tty=; live=0
+$_processChecks
 $_findSessionProcess
 [ -n "\$found" ] || fail not-found
+[ "\$live" -le 1 ] || fail ambiguous
 if [ -n "\$pid" ]; then
-  case "\$(ps -o command= -p "\$pid")" in *claude*) ;; *) fail not-claude ;; esac
+  isclaude "\$pid" || fail not-claude
+  # A process in a tmux pane has a session of its own: this restart is for terminal tabs.
+  inpane "\$pid" "\$(tmux list-panes -a -F '#{pane_pid}' 2>/dev/null | tr '\\n' ' ')" && fail in-tmux
   tty=\$(ps -o tty= -p "\$pid" | tr -d ' ')
   echo pocketrig-restart-step stopping
   kill -TERM "\$pid" 2>/dev/null
@@ -291,30 +305,34 @@ Future<({String name, bool tabLeftBehind})> restartInTmux(Host host,
 ///
 /// shortcut: uses the default watcher port unless the SSH login sets
 /// POCKETRIG_ANSWER_PORT; elsewhere the row stays until the watcher prunes it.
-String killAgentScript({String? sessionId, String? name, String? pane, int waitSeconds = 5}) => '''
-id=${shQuote(sessionId ?? '')}; name=${shQuote(name ?? '')}; pane=${shQuote(pane ?? '')}
+String killAgentScript({String? sessionId, String? name, String? pane, int? since, int waitSeconds = 5}) => '''
+id=${shQuote(sessionId ?? '')}; name=${shQuote(name ?? '')}; pane=${shQuote(pane ?? '')}; since=${since ?? 0}
 fail() { echo "pocketrig-kill-error \$1"; exit 0; }
-found=; pid=
+found=; pid=; live=0
+$_processChecks
 $_findSessionProcess
 [ -n "\$name" ] || [ -n "\$found" ] || fail not-found
-if [ -n "\$pid" ]; then
-  case "\$(ps -o command= -p "\$pid")" in
-    *claude*) ;;
-    *) [ -n "\$name" ] || fail not-claude; pid= ;;
-  esac
+[ "\$live" -le 1 ] || fail ambiguous
+if [ -n "\$pid" ] && ! isclaude "\$pid"; then
+  [ -n "\$name" ] || fail not-claude
+  pid=
 fi
+# A row with no tmux session is a terminal tab: a process that runs in a tmux pane is some session's, not this row's.
+if [ -z "\$name" ] && [ -n "\$pid" ] && command -v tmux >/dev/null 2>&1; then
+  inpane "\$pid" "\$(tmux list-panes -a -F '#{pane_pid}' 2>/dev/null | tr '\\n' ' ')" && fail in-tmux
+fi
+start=; [ -z "\$pid" ] || start=\$(ps -o lstart= -p "\$pid" 2>/dev/null)
 if [ -n "\$name" ]; then
   command -v tmux >/dev/null 2>&1 || fail no-tmux
   if tmux has-session -t "=\$name" 2>/dev/null; then
-    # The process is this agent's only when one of the session's panes is it or its ancestor: a conversation resumed
-    # elsewhere, or a reused pid, is another session's, and is left running.
-    panes=\$(tmux list-panes -s -t "=\$name" -F '#{pane_pid}' 2>/dev/null | tr '\\n' ' ')
-    p=\$pid; mine=
-    while [ -n "\$p" ] && [ "\$p" -gt 1 ] 2>/dev/null; do
-      case " \$panes" in *" \$p "*) mine=1; break ;; esac
-      p=\$(ps -o ppid= -p "\$p" 2>/dev/null | tr -d ' ')
-    done
-    [ -n "\$mine" ] || pid=
+    if [ -n "\$pid" ]; then
+      # Claude runs elsewhere (the conversation was resumed, or a name like 0 was reused): this session is not its row's.
+      inpane "\$pid" "\$(tmux list-panes -s -t "=\$name" -F '#{pane_pid}' 2>/dev/null | tr '\\n' ' ')" || fail session-reused
+    elif [ -z "\$pane" ] && [ "\$since" -gt 0 ] 2>/dev/null; then
+      # Nothing of the agent is alive: a session made after the row was first seen is another one.
+      sc=\$(tmux display-message -p -t "=\$name:" '#{session_created}' 2>/dev/null)
+      [ -z "\$sc" ] || [ "\$sc" -le \$((since + 5)) ] 2>/dev/null || fail session-reused
+    fi
     if [ -z "\$pane" ]; then
       tmux kill-session -t "=\$name" 2>/dev/null || fail kill-failed
     else
@@ -326,10 +344,11 @@ if [ -n "\$name" ]; then
     pid=
   fi
 fi
-if [ -n "\$pid" ]; then
+same() { [ "\$(ps -o lstart= -p "\$pid" 2>/dev/null)" = "\$start" ]; }
+if [ -n "\$pid" ] && same; then
   kill -TERM "\$pid" 2>/dev/null
   i=0
-  while kill -0 "\$pid" 2>/dev/null; do
+  while kill -0 "\$pid" 2>/dev/null && same; do
     [ "\$i" -eq ${waitSeconds * 2} ] && kill -KILL "\$pid" 2>/dev/null
     [ "\$i" -ge ${waitSeconds * 2 + 4} ] && fail still-running
     i=\$((i + 1))
@@ -345,6 +364,30 @@ fi
 echo pocketrig-kill-ok
 ''';
 
+/// Clears [sessionId]'s record from the watcher and stops nothing: what a row whose tmux session is gone offers.
+String forgetAgentScript(String sessionId) => '''
+id=${shQuote(sessionId)}
+printf 'header = "Authorization: Bearer %s"\\n' "\$(cat "\$HOME/.config/pocketrig/answer-token" 2>/dev/null)" |
+curl -s -m 2 -K - -X POST "http://127.0.0.1:\${POCKETRIG_ANSWER_PORT:-7434}/hook" \\
+  -H 'Content-Type: application/json' \\
+  -d "{\\"session_id\\":\\"\$id\\",\\"hook_event_name\\":\\"SessionEnd\\"}" >/dev/null 2>&1
+echo pocketrig-kill-ok
+''';
+
+/// Removes a row whose tmux session is gone from the list. Never kills: nothing of it runs, and a process that holds its id
+/// is some other session's. A row only the daemon's scan knows has no record here to clear.
+Future<void> forgetLooseAgent(Host host, LooseAgent a) async {
+  final id = a.claudeSessionId;
+  if (id == null) return;
+  if (!RegExp(r'^[A-Za-z0-9_-]+\$').hasMatch(id)) throw OpenRigException('That doesn\'t look like a Claude session id.');
+  final ssh = await SshExec.connect(host);
+  try {
+    await ssh.runLogin('sh -c ${shQuote(forgetAgentScript(id))}');
+  } finally {
+    ssh.close();
+  }
+}
+
 /// Ends [a] over SSH. Throws with a sentence saying what happened.
 Future<void> killAgent(Host host, LooseAgent a) async {
   final id = a.claudeSessionId;
@@ -354,7 +397,7 @@ Future<void> killAgent(Host host, LooseAgent a) async {
   final ssh = await SshExec.connect(host);
   final String out;
   try {
-    out = await ssh.runLogin('sh -c ${shQuote(killAgentScript(sessionId: id, name: a.tmuxSession, pane: a.tmuxPane))}');
+    out = await ssh.runLogin('sh -c ${shQuote(killAgentScript(sessionId: id, name: a.tmuxSession, pane: a.tmuxPane, since: a.since == null ? null : a.since!.millisecondsSinceEpoch ~/ 1000))}');
   } finally {
     ssh.close();
   }
@@ -365,6 +408,9 @@ Future<void> killAgent(Host host, LooseAgent a) async {
     'not-found' => 'Couldn\'t find this session\'s process. Nothing was killed. If it\'s still running, stop it at the Mac.',
     'not-claude' => 'The process on record isn\'t Claude any more. Nothing was killed.',
     'pane-moved' => 'Its tmux pane has changed. Nothing was killed. Rescan and try again.',
+    'session-reused' => 'That tmux session isn\'t this agent\'s any more (its name was reused). Nothing was killed. Rescan and try again.',
+    'ambiguous' => 'More than one running Claude has this conversation. Nothing was killed. Stop the right one at the Mac.',
+    'in-tmux' => 'That Claude runs in a tmux session, not in a terminal tab. Nothing was killed. Rescan and try again.',
     'kill-failed' => 'tmux couldn\'t close it. Check the agent at the Mac.',
     'still-running' => 'The agent didn\'t stop, even after a force kill. Check it at the Mac.',
     _ => 'The kill gave no result. Check the agent at the Mac.',

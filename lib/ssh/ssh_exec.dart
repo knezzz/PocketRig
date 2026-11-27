@@ -442,8 +442,8 @@ class SshExec {
   /// Stops an agent's job and everything it started; how many processes are
   /// still running 5 s later.
   /// Under `sh`: the login shell may be zsh, which doesn't split `$all` into pids.
-  Future<int> stopJob(int pid) async =>
-      AgentJob.stillRunning(await run('sh -c ${shQuote(AgentJob.stopScript(pid))}'));
+  Future<int> stopJob(int pid, {String? session}) async =>
+      AgentJob.stillRunning(await run('sh -c ${shQuote(AgentJob.stopScript(pid, session: session))}'));
 
   /// Every running Claude Code subagent on the host.
   Future<List<Subagent>> subagents() async => Subagent.parse(await run('sh -c ${shQuote(Subagent.script())}'));
@@ -536,6 +536,9 @@ class SshExec {
   /// the shell, and `--` ends git's options, so a name with spaces, quotes or a leading dash is one argument.
   Future<void> removeWorktree(String repo, String path, {bool force = false}) =>
       _git(repo, 'worktree remove ${force ? '--force ' : ''}-- ${shQuote(path)}');
+
+  /// Forgets the worktrees of [repo] whose folder is gone (`git worktree prune`), the way to clear a missing one from the list.
+  Future<void> pruneWorktrees(String repo) => _git(repo, 'worktree prune');
 
   /// The uncommitted and untracked files of the worktree at [path] (`git status --porcelain`, minus the status codes). A
   /// folder with only untracked files shows as the folder.

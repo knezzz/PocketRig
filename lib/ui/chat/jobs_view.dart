@@ -121,7 +121,7 @@ class _JobsListState extends State<JobsList> {
     });
     (String, bool) outcome;
     try {
-      final left = await (await (_ssh ??= SshExec.connect(host))).stopJob(j.pid);
+      final left = await (await (_ssh ??= SshExec.connect(host))).stopJob(j.pid, session: widget.session);
       outcome = left == 0
           ? ('Stopped ${j.short}', true)
           : ('${j.short} is still running: $left ${left == 1 ? 'process' : 'processes'} didn\'t stop within 5 s.', false);

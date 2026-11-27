@@ -651,7 +651,12 @@ Future<bool> killLooseAgent(BuildContext context, LooseAgent a) async {
     return false;
   }
   try {
-    await killAgent(host, a);
+    // A gone row is only cleared, never killed: the scan it came from can be a minute old, and the kill is for a live agent.
+    if (gone) {
+      await forgetLooseAgent(host, a);
+    } else {
+      await killAgent(host, a);
+    }
     toastOn(messenger, k, gone ? 'Removed ${a.name}' : 'Killed ${a.name}');
     // The daemon keeps listing a dead tmux session until its next scan.
     fleet.feedFor(host).refresh(scan: true).ignore();

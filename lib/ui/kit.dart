@@ -1149,6 +1149,7 @@ class AgentRow extends StatelessWidget {
     this.dim = false,
     this.indent = 0,
     this.moreSlot = false,
+    this.noIcon = false,
     this.expanded,
     this.action,
     this.ageOnTitle = false,
@@ -1185,6 +1186,9 @@ class AgentRow extends StatelessWidget {
 
   /// With a mouse, keep the ⋯'s room although there is no ⋯ (a nested row), so every row's age ends at one right edge.
   final bool moreSlot;
+
+  /// The '+N more' row: no icon (it is not a shell), but the icon's room, so its text sits at the shells' name x.
+  final bool noIcon;
 
   /// A row that opens in place (the Inbox card): a small chevron at the right end, up when open. Null: none.
   final bool? expanded;
@@ -1246,11 +1250,13 @@ class AgentRow extends StatelessWidget {
                 onLongPress: onMore,
                 longPressHint: onMore == null ? null : (moreTooltip ?? 'more actions'),
                 openLabel: openLabel,
-                leading: switch (kind) {
-                  StatusKind.agent => StatusIcon.agent(status, ground: ground, runtime: runtime),
-                  StatusKind.subagent => StatusIcon.subagent(status, ground: ground),
-                  StatusKind.shell => StatusIcon.shell(status, ground: ground),
-                },
+                leading: noIcon
+                    ? const SizedBox.square(dimension: 18)
+                    : switch (kind) {
+                        StatusKind.agent => StatusIcon.agent(status, ground: ground, runtime: runtime),
+                        StatusKind.subagent => StatusIcon.subagent(status, ground: ground),
+                        StatusKind.shell => StatusIcon.shell(status, ground: ground),
+                      },
                 trailing: meter == null && expanded == null && action == null
                     ? null
                     : Row(mainAxisSize: MainAxisSize.min, children: [

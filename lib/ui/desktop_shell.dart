@@ -1258,6 +1258,7 @@ List<Widget> jobRows(List<AgentJob> jobs, int depth, void Function(AgentJob? job
         guides: guides,
         agentStatus: Status.working,
         kind: StatusKind.shell,
+        noIcon: true,
         label: '+$more more',
         words: '$more more shells',
         selected: false,
@@ -1279,6 +1280,7 @@ class _Row extends StatelessWidget {
     this.compact = false,
     this.agentStatus,
     this.kind = StatusKind.agent,
+    this.noIcon = false,
     this.runtime,
     this.worktree,
     this.wtLine,
@@ -1316,6 +1318,9 @@ class _Row extends StatelessWidget {
   /// The icon's kind: an agent's logo, a subagent's fork, a shell's terminal. A subagent has the state dot; an agent's state is
   /// its icon's colour.
   final StatusKind kind;
+
+  /// The '+N more' shells row: the icon's room, no icon.
+  final bool noIcon;
 
   /// An agent's runtime: its logo is the icon, in the state's colour.
   final String? runtime;
@@ -1430,7 +1435,9 @@ class _Row extends StatelessWidget {
                         SizedBox(
                             width: slot,
                             child: Center(
-                                child: agentStatus == null
+                                child: noIcon
+                                    ? null
+                                    : agentStatus == null
                                     ? leading
                                     // The glyph is 17-18dp in a 16dp slot: it may overhang by a dp each side.
                                     : SizedBox(

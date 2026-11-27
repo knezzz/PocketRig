@@ -89,6 +89,7 @@ class SeatList extends StatelessWidget {
                 kind: StatusKind.shell,
                 indent: 28,
                 moreSlot: true,
+                noIcon: true,
                 onTap: () => open(null),
                 openLabel: '$more more shells of ${seat.logicalId}',
               ),

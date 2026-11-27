@@ -5,6 +5,8 @@ import 'package:pocket_rig/data/fleet.dart' show fleet;
 import 'package:pocket_rig/main.dart' show AppScope;
 import 'package:pocket_rig/models.dart';
 import 'package:pocket_rig/ui/desktop_shell.dart' show AppShell, jobRows;
+import 'package:pocket_rig/ui/kit.dart' show AgentRow;
+import 'package:pocket_rig/ui/status_shape.dart' show StatusIcon;
 import 'package:pocket_rig/ui/rigs_home.dart';
 import 'package:pocket_rig/ui/shells_screen.dart' show ShellsScreen;
 import 'package:pocket_rig/ui/rig/seats_tab.dart';
@@ -46,6 +48,7 @@ void main() {
       expect(find.textContaining('job 4', findRichText: true), findsNothing);
       expect(find.textContaining('more'), more > 0 ? findsOneWidget : findsNothing);
       expect(find.text('+0 more'), findsNothing);
+      expect(find.byType(StatusIcon), findsNWidgets(3), reason: 'three shells wear the terminal icon; the +N more row has none');
       for (var i = 1; i <= 3; i++) {
         await tester.tap(find.textContaining('job $i', findRichText: true));
       }
@@ -60,6 +63,7 @@ void main() {
       await pump(tester, SeatList(seats: [lead], onOpen: (s) => seats.add(s.logicalId), onMore: (_) {}, onShells: (s, j) => opened.add(j?.short)));
       expect(find.textContaining('job 4', findRichText: true), findsNothing);
       expect(find.textContaining('+'), more > 0 ? findsOneWidget : findsNothing);
+      expect(find.byType(StatusIcon), findsNWidgets(4), reason: 'the agent and three shells; the +N more row has no icon');
       for (var i = 1; i <= 3; i++) {
         await tester.tap(find.textContaining('job $i', findRichText: true));
       }
@@ -87,6 +91,9 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.textContaining('job 3', findRichText: true), findsOneWidget);
     expect(find.textContaining('job 4', findRichText: true), findsNothing);
+    expect(find.ancestor(of: find.text('+2 more'), matching: find.byType(AgentRow)), findsOneWidget);
+    expect(find.descendant(of: find.ancestor(of: find.text('+2 more'), matching: find.byType(AgentRow)), matching: find.byType(StatusIcon)), findsNothing, reason: 'not a shell: no terminal icon');
+    expect(find.descendant(of: find.ancestor(of: find.text('job 3', findRichText: true), matching: find.byType(AgentRow)), matching: find.byType(StatusIcon)), findsOneWidget);
     await tester.tap(find.text('+2 more'));
     await tester.pumpAndSettle();
     expect(find.byType(ShellsScreen), findsOneWidget, reason: '+N more opens the full list');

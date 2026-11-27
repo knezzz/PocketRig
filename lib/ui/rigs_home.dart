@@ -617,8 +617,8 @@ class _RigsHomeState extends State<RigsHome> {
     final k = Tokens.of(context);
     final foldKey = 'a:${host.id}|${p.path}';
     final open = homeIdleOpen.contains(foldKey);
-    Widget row(Status status, StatusKind kind, String title, String meta, {double indent = 0, String? age, VoidCallback? onTap, String? branch, String? runtime}) =>
-        AgentRow(name: title, status: status, kind: kind, runtime: runtime, extra: branch, task: meta, age: age, indent: indent, onTap: onTap);
+    Widget row(Status status, StatusKind kind, String title, String meta, {double indent = 0, String? age, VoidCallback? onTap, String? branch, String? runtime, bool noIcon = false}) =>
+        AgentRow(name: title, status: status, kind: kind, runtime: runtime, extra: branch, task: meta, age: age, indent: indent, noIcon: noIcon, onTap: onTap);
     // The idle agents (older than 10 minutes), dimmed, when the fold is open.
     List<Widget> idleRows() => [
           for (final a in folded)
@@ -638,7 +638,7 @@ class _RigsHomeState extends State<RigsHome> {
         for (final j in shown)
           row(Status.working, StatusKind.shell, j.short, j.isMonitor ? 'monitor' : 'shell', indent: 32, age: ago(homeNow().subtract(j.elapsed)),
               onTap: () => _openShells(context, host, a, p.name, j)),
-        if (more > 0) row(Status.working, StatusKind.shell, '+$more more', '', indent: 32, onTap: () => _openShells(context, host, a, p.name, null)),
+        if (more > 0) row(Status.working, StatusKind.shell, '+$more more', '', indent: 32, noIcon: true, onTap: () => _openShells(context, host, a, p.name, null)),
       ];
     }
 

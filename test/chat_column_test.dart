@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:pocket_rig/data/host_store.dart' show isDesktop;
 import 'package:pocket_rig/ui/agent_header.dart';
 import 'package:pocket_rig/ui/chat/message_views.dart' show UserBubble;
 import 'package:pocket_rig/ui/chat_screen.dart';
@@ -47,4 +48,27 @@ void main() {
     final bubble = tester.getRect(find.byType(SelectableText));
     expect(bubble.width, lessThanOrEqualTo(500 * 0.8), reason: 'the box is 500 wide in a 1800 window');
   });
+
+  for (final (desktop, inset) in [(true, 20.0), (false, 10.0)]) {
+    testWidgets('the composer box\'s edges: ${desktop ? 'on the Mac the chat gutter, as the transcript\'s and the cards\'' : 'on the phone 10'}', (tester) async {
+      final store = await installFakes();
+      isDesktop = desktop;
+      addTearDown(() => isDesktop = false);
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await tester.pumpWidget(MaterialApp(
+          home: phone(store, ChatScreen(rigName: 'conveyor', seat: seatFromFixture('r-conveyor', 'impl'), asChat: true))));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      final composer = tester.getRect(find.byType(Composer));
+      final box = tester.getRect(find.descendant(
+          of: find.byType(Composer),
+          matching: find.byWidgetPredicate((w) => w is Container && w.decoration is BoxDecoration && (w.decoration! as BoxDecoration).border != null)).first);
+      expect(box.left - composer.left, inset);
+      expect(composer.right - box.right, inset);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump(const Duration(seconds: 5));
+    });
+  }
 }

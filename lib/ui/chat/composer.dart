@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../data/host_store.dart' show isDesktop;
 import '../../data/outbox.dart';
 import 'message_views.dart';
+import 'session_pills.dart' show chatGutter;
 import '../theme.dart';
 
 /// `/model` aliases Claude Code takes: (alias, label, hint).
@@ -122,7 +123,8 @@ class Composer extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+          // On the Mac its edges are the transcript's and the cards' (chatGutter); the phone keeps 10.
+          padding: EdgeInsets.fromLTRB(isDesktop ? chatGutter : 10, 8, isDesktop ? chatGutter : 10, 10),
           child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.stretch, children: [
             Container(
               constraints: const BoxConstraints(minHeight: 48),

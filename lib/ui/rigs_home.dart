@@ -3,6 +3,7 @@ import 'dart:async';
 import '../data/projects.dart' show projectGroup;
 import 'package:flutter/material.dart';
 
+import '../data/agent_jobs.dart' show AgentJob, capShells;
 import '../data/chat_cache.dart' show chatKey;
 import '../data/fleet.dart';
 import '../data/home_order.dart';
@@ -586,6 +587,11 @@ class _RigsHomeState extends State<RigsHome> {
     return line.isEmpty ? null : line;
   }
 
+  void _openShells(BuildContext context, Host host, LooseAgent a, String project, AgentJob? tapped) {
+    useHost(context, host);
+    detailNavigator(context).push(MaterialPageRoute<void>(builder: (_) => ShellsScreen(host: host, seat: a.toSeat(), title: a.name, project: project, tapped: tapped)));
+  }
+
   /// The agents running in the project outside a rig, with their subagents and shells nested, then the project's shells.
   Widget _outsideRig(BuildContext context, Host host, Project p, List<LooseAgent> loose, List<LooseAgent> folded) {
     final k = Tokens.of(context);
@@ -605,6 +611,17 @@ class _RigsHomeState extends State<RigsHome> {
               }),
             ),
         ];
+    // At most three shells under an agent, then '+N more'; each opens the agent's shells (live output and a Stop).
+    List<Widget> shellRows(LooseAgent a) {
+      final (:shown, :more) = capShells(jobsOfLoose(host, a));
+      return [
+        for (final j in shown)
+          row(Status.working, StatusKind.shell, j.short, j.isMonitor ? 'monitor' : 'shell', indent: 32, age: ago(homeNow().subtract(j.elapsed)),
+              onTap: () => _openShells(context, host, a, p.name, j)),
+        if (more > 0) row(Status.working, StatusKind.shell, '+$more more', '', indent: 32, onTap: () => _openShells(context, host, a, p.name, null)),
+      ];
+    }
+
     final rows = <Widget>[
       for (final a in loose) ...[
         row(Status.of(looseState(host, a)), StatusKind.agent, a.name,
@@ -618,13 +635,7 @@ class _RigsHomeState extends State<RigsHome> {
         for (final sub in fleet.feedFor(host).subagentsOf(a.toSeat()))
           row(Status.working, StatusKind.subagent, sub.title, 'subagent',
               indent: 32, age: (sub.lastWrite ?? sub.started) == null ? null : ago(sub.lastWrite ?? sub.started)),
-        for (final j in jobsOfLoose(host, a).where((j) => j.isShell))
-          row(Status.working, StatusKind.shell, j.short, j.isMonitor ? 'monitor' : 'shell', indent: 32, age: ago(homeNow().subtract(j.elapsed)),
-              // Opens the agent's shells: each one's live output and a Stop.
-              onTap: () {
-            useHost(context, host);
-            detailNavigator(context).push(MaterialPageRoute<void>(builder: (_) => ShellsScreen(host: host, seat: a.toSeat(), title: a.name, project: p.name, tapped: j)));
-          }),
+        ...shellRows(a),
       ],
       for (final sh in p.shells)
           row(Status.idle, StatusKind.shell, host.shellLabel(sh.name), 'shell in this project', onTap: () {

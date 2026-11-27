@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../data/agent_jobs.dart' show AgentJob, capShells;
 import '../../data/fleet.dart' show fleet;
 import '../../api/openrig_client.dart' show OpenRigException;
 import '../../main.dart' show AppScope;
@@ -28,10 +29,14 @@ class SeatList extends StatelessWidget {
     required this.onOpen,
     required this.onMore,
     this.modes = const {},
+    this.onShells,
   });
   final List<Seat> seats;
   final void Function(Seat) onOpen;
   final void Function(Seat) onMore;
+
+  /// A shell row (or '+N more', with a null job) opens the agent's shells list; without it the agent opens.
+  final void Function(Seat, AgentJob?)? onShells;
 
   /// Permission mode by session name (or logical id), once loaded.
   final Map<String, String?> modes;
@@ -60,18 +65,35 @@ class SeatList extends StatelessWidget {
               onTap: canOpenSubagent(sub) ? () => requestSubagent(host, seat, sub) : () => onOpen(seat),
               openLabel: '${sub.title}, subagent of ${seat.logicalId}, running',
             ),
-        for (final j in seat.jobs.where((j) => j.isShell))
-          AgentRow(
-            name: j.short,
-            status: Status.working,
-            kind: StatusKind.shell,
-            task: j.isMonitor ? 'monitor' : 'shell',
-            age: 'up ${ago(homeNow().subtract(j.elapsed))}',
-            indent: 28,
-            moreSlot: true,
-            onTap: () => onOpen(seat),
-            openLabel: '${j.short}, ${j.isMonitor ? 'monitor' : 'shell'} of ${seat.logicalId}, running',
-          ),
+        // At most three, then '+N more'; each opens the agent's shells list.
+        ...() {
+          final (:shown, :more) = capShells(seat.jobs);
+          void open(AgentJob? j) => onShells != null ? onShells!(seat, j) : onOpen(seat);
+          return [
+            for (final j in shown)
+              AgentRow(
+                name: j.short,
+                status: Status.working,
+                kind: StatusKind.shell,
+                task: j.isMonitor ? 'monitor' : 'shell',
+                age: 'up ${ago(homeNow().subtract(j.elapsed))}',
+                indent: 28,
+                moreSlot: true,
+                onTap: () => open(j),
+                openLabel: '${j.short}, ${j.isMonitor ? 'monitor' : 'shell'} of ${seat.logicalId}, running',
+              ),
+            if (more > 0)
+              AgentRow(
+                name: '+$more more',
+                status: Status.working,
+                kind: StatusKind.shell,
+                indent: 28,
+                moreSlot: true,
+                onTap: () => open(null),
+                openLabel: '$more more shells of ${seat.logicalId}',
+              ),
+          ];
+        }(),
       ];
 
   Widget _list(BuildContext context, Host? host) {

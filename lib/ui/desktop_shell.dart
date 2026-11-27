@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'rig/seat_actions.dart' show seatMenuRows;
 import 'package:flutter/services.dart';
 
-import '../data/agent_jobs.dart' show AgentJob;
+import '../data/agent_jobs.dart' show AgentJob, capShells, maxShellRows;
 import 'app_icon.dart';
 import '../data/fleet.dart';
 import '../data/home_order.dart';
@@ -1043,7 +1043,7 @@ List<Widget> _looseRows(BuildContext context, Host host, LooseAgent a, List<RigW
         openLooseAgent(detailNavigator(context), a, rigs);
       }, guides: depth),
       // A shell opens its agent's shells (live output, Stop).
-      ..._jobRows(jobsOfLoose(host, a), depth + 1, (job) {
+      ...jobRows(jobsOfLoose(host, a), depth + 1, (job) {
         useHost(context, host);
         detailNavigator(context).push(MaterialPageRoute<void>(
             builder: (_) => ShellsScreen(host: host, seat: a.toSeat(), title: a.name, project: project, tapped: job)));
@@ -1152,7 +1152,7 @@ class _RigGroup extends StatelessWidget {
             },
           ),
           ..._subagentRows(context, host, s, depth + 1, () => onSeat(s)),
-          ..._jobRows(s.jobs, depth + 1, (job) {
+          ...jobRows(s.jobs, depth + 1, (job) {
             useHost(context, host);
             detailNavigator(context).push(MaterialPageRoute<void>(
                 builder: (_) => ShellsScreen(host: host, seat: s, title: s.logicalId, project: projectName, rigName: r.rig.name, tapped: job)));
@@ -1227,22 +1227,39 @@ List<Widget> _subagentRows(BuildContext context, Host host, Seat seat, int depth
     ];
 
 /// The shells an agent started (its Bash tool's processes), nested under it like its subagents: the same row, a blue
-/// terminal icon, the command as its name and how long it has run as its age. A tap opens the agent.
-List<Widget> _jobRows(List<AgentJob> jobs, int depth, void Function(AgentJob job) onOpen, {int? guides}) => [
-      for (final j in jobs.where((j) => j.isShell))
-        _Row(
-          level: _Level.agent,
-          depth: depth + 1,
-          guides: guides,
-          agentStatus: Status.working,
-          kind: StatusKind.shell,
-          label: j.short,
-          ago: ago(homeNow().subtract(j.elapsed)),
-          words: j.isMonitor ? 'monitor, running' : 'shell, running',
-          selected: false,
-          onTap: () => onOpen(j),
-        ),
-    ];
+/// terminal icon, the command as its name and how long it has run as its age. At most [maxShellRows], then '+N more'. A tap
+/// opens the agent's shells ([onOpen]; null for the '+N more' row, which has no shell of its own).
+@visibleForTesting
+List<Widget> jobRows(List<AgentJob> jobs, int depth, void Function(AgentJob? job) onOpen, {int? guides}) {
+  final (:shown, :more) = capShells(jobs);
+  return [
+    for (final j in shown)
+      _Row(
+        level: _Level.agent,
+        depth: depth + 1,
+        guides: guides,
+        agentStatus: Status.working,
+        kind: StatusKind.shell,
+        label: j.short,
+        ago: ago(homeNow().subtract(j.elapsed)),
+        words: j.isMonitor ? 'monitor, running' : 'shell, running',
+        selected: false,
+        onTap: () => onOpen(j),
+      ),
+    if (more > 0)
+      _Row(
+        level: _Level.agent,
+        depth: depth + 1,
+        guides: guides,
+        agentStatus: Status.working,
+        kind: StatusKind.shell,
+        label: '+$more more',
+        words: '$more more shells',
+        selected: false,
+        onTap: () => onOpen(null),
+      ),
+  ];
+}
 
 /// One row of the tree, the same everywhere: [depth] levels in, the icon slot (no fold slot: [view] puts a chevron at the right edge, only on
 /// project and rig rows), the icon slot, the label, then what sits at the right edge. The guides of the

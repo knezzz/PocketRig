@@ -3,6 +3,15 @@ import 'projects.dart' show shQuote;
 
 /// A process an agent started: a shell from its Bash tool (foreground or in
 /// the background), a watcher, a dev server, or an MCP server.
+/// Most shells an agent's rows list; more come as one '+N more' row, and any of them opens the agent's full shells list.
+const maxShellRows = 3;
+
+/// The shells of [jobs] to list under an agent, at most [maxShellRows], and how many are left out ('+[more] more').
+({List<AgentJob> shown, int more}) capShells(List<AgentJob> jobs) {
+  final shells = jobs.where((j) => j.isShell).toList();
+  return (shown: shells.take(maxShellRows).toList(), more: shells.length > maxShellRows ? shells.length - maxShellRows : 0);
+}
+
 class AgentJob {
   final int pid;
 

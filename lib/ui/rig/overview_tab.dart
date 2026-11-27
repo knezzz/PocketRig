@@ -14,6 +14,7 @@ import '../chat/diff_view.dart' show DiffScreen;
 import '../chat/git_cards.dart' show ChangesCard;
 import '../chat/media_view.dart';
 import '../common.dart';
+import '../shells_screen.dart' show ShellsScreen;
 import '../kit.dart';
 import '../theme.dart';
 import '../status_shape.dart';
@@ -204,7 +205,17 @@ class RigBody extends StatelessWidget {
       ],
       if (agents.any((s) => s.notReady)) ...[StartingCard(agents: agents), const SizedBox(height: 16)],
       SectionLabel('Agents · ${agents.length}'),
-      SeatList(seats: seats, modes: modes, onOpen: onOpenSeat, onMore: onSeatMore),
+      SeatList(
+        seats: seats,
+        modes: modes,
+        onOpen: onOpenSeat,
+        onMore: onSeatMore,
+        onShells: (s, job) {
+          final host = AppScope.read(context).active;
+          if (host == null) return onOpenSeat(s);
+          push(ShellsScreen(host: host, seat: s, title: s.logicalId, rigName: rig.name, tapped: job));
+        },
+      ),
     ];
     // Under the agents on a phone; a right column beside them on a wide page: Work, Activity and Usage.
     final aside = [...workSection(take: 5), _gap, _Activity(events: events, names: names), _gap, ...usage];

@@ -73,4 +73,13 @@ void main() {
     await expectLater(sendToSeat(null, null, loose('dev'), 'hi'), throwsA(isA<OpenRigException>()));
     await expectLater(sendToSeat(host, null, Seat(rigId: 'r', logicalId: 'x'), 'hi'), throwsA(isA<OpenRigException>()));
   });
+
+  test('a send the daemon only recorded (seat gone, OpenRig 0.7.16+) is an error; a held one is not', () async {
+    var reply = '{"ok":true,"outcome":"recorded","sent":false,"warning":"Message recorded in the sender outbox, not delivered."}';
+    final api = OpenRigClient(host, httpClient: MockClient((req) async => http.Response(reply, 200)));
+    final seat = Seat(rigId: 'r', logicalId: 'lead', sessionName: 'lead@r', runtime: 'claude-code');
+    await expectLater(sendToSeat(host, api, seat, 'hi'), throwsA(predicate((e) => '$e'.contains('Not delivered: lead@r is gone'))));
+    reply = '{"ok":true,"outcome":"retained","sent":false,"reason":"runtime_switch_in_progress"}';
+    await sendToSeat(host, api, seat, 'hi'); // typed later by the daemon
+  });
 }
